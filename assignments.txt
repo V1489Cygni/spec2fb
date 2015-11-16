@@ -1,0 +1,75 @@
+REQ := TRUE;
+
+init(c1Home) := TRUE;
+next(c1Home) := case
+	next(CNF) & next(c1Extend) : FALSE;
+	next(CNF) & next(c1Retract) : TRUE;
+	TRUE : c1Home;
+esac;
+
+init(c1End) := FALSE;
+next(c1End) := case
+	next(CNF) & next(c1Extend) : TRUE;
+	next(CNF) & next(c1Retract) : FALSE;
+	TRUE : c1End;
+esac;
+
+init(c2Home) := TRUE;
+next(c2Home) := case
+	next(CNF) & next(c2Extend) : FALSE;
+	next(CNF) & next(c2Retract) : TRUE;
+	TRUE : c2Home;
+esac;
+
+init(c2End) := FALSE;
+next(c2End) := case
+	next(CNF) & next(c2Extend) : TRUE;
+	next(CNF) & next(c2Retract) : FALSE;
+	TRUE : c2End;
+esac;
+
+init(vcHome) := TRUE;
+next(vcHome) := case
+	next(CNF) & next(vcExtend) : FALSE;
+	next(CNF) & !next(vcExtend) : TRUE;
+	TRUE : vcHome;
+esac;
+
+init(vcEnd) := FALSE;
+next(vcEnd) := case
+	next(CNF) & next(vcExtend) : TRUE;
+	next(CNF) & !next(vcExtend) : FALSE;
+	TRUE : vcEnd;
+esac;
+
+init(vs) := FALSE;
+next(vs) := case
+	next(CNF) & next(vacuum_on) : TRUE;
+	next(CNF) & next(vacuum_off) : FALSE;
+	TRUE : vs;
+esac;
+
+init(vac) := FALSE;
+next(vac) := case
+	next(vp1) | next(vp2) | next(vp3) : TRUE;
+	!next(vs) : FALSE;
+	TRUE : vac;
+esac;
+
+next(pp1) := case
+	vp1 : p1;
+	pp1 : TRUE;
+	TRUE : p1;
+esac;
+
+next(pp2) := case
+	vp2 : p2;
+	pp2 : TRUE;
+	TRUE : p2;
+esac;
+
+next(pp3) := case
+	vp3 : p3;
+	pp3 : TRUE;
+	TRUE : p3;
+esac;

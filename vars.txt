@@ -1,0 +1,9 @@
+VAR vs : boolean;
+VAR p1 : boolean;
+VAR p2 : boolean;
+VAR p3 : boolean;
+
+DEFINE vp1 := c1End & c2Home & vcEnd & vs & pp1;
+DEFINE vp2 := c1Home & c2End & vcEnd & vs & pp2;
+DEFINE vp3 := c1End & c2End & vcEnd & vs & pp3;
+
