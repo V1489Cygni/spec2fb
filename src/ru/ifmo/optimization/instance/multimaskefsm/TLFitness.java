@@ -19,6 +19,7 @@ public class TLFitness {
     private static List<String> outputEvents;
     private static int fitnessEvaluations, maxSatisfiedSpecifications;
     private static double averageSatisfiedSpecifications, averageNegativeScenariosFitness;
+    private static long time, number;
 
     private static void initOE() throws FileNotFoundException {
         Scanner sc = new Scanner(new File("oe.txt"));
@@ -76,7 +77,14 @@ public class TLFitness {
 
     public static Pair<Double, Double> getFitness(MultiMaskEfsm instance, MultiMaskTask task) {
         String s = getSMV(instance);
+        synchronized (scenarios) {
+            time -= System.currentTimeMillis();
+        }
         double d = interact(s);
+        synchronized (scenarios) {
+            time += System.currentTimeMillis();
+            number++;
+        }
         double d2 = 0;
         synchronized (scenarios) {
             for (VarsActionsScenario scenario : scenarios) {
@@ -115,61 +123,7 @@ public class TLFitness {
                         t++;
                         num++;
                     } else if (nl.endsWith("false")) {
-                        String ie = "";
-                        String oe = "";
-                        String iv = "";
-                        for (int i = 0; i < MultiMaskEfsmSkeleton.PREDICATE_NAMES.size(); i++) {
-                            iv += "0";
-                        }
-                        String ov = "";
-                        List<ScenarioElement> elements = new ArrayList<>();
-                        for (int i = 0; i < names.size(); i++) {
-                            ov += "0";
-                        }
-                        while (true) {
-                            nl = sc.nextLine();
-                            if (nl.startsWith("-> State:")) {
-                                break;
-                            }
-                        }
-                        while (sc.hasNext()) {
-                            nl = sc.nextLine();
-                            if (!nl.startsWith("-") && nl.contains("=")) {
-                                Scanner scanner = new Scanner(nl);
-                                String name = scanner.next();
-                                scanner.next();
-                                boolean value = scanner.next().equals("TRUE");
-                                if (MultiMaskEfsmSkeleton.INPUT_EVENTS.containsKey(name)) {
-                                    if (value) {
-                                        ie = name;
-                                    } else if (ie.equals(name)) {
-                                        ie = "";
-                                    }
-                                } else if (outputEvents.contains(name)) {
-                                    if (value) {
-                                        oe = name;
-                                    } else if (oe.equals(name)) {
-                                        oe = "";
-                                    }
-                                } else if (MultiMaskEfsmSkeleton.PREDICATE_NAMES.contains(name)) {
-                                    int x = MultiMaskEfsmSkeleton.PREDICATE_NAMES.indexOf(name);
-                                    iv = iv.substring(0, x) + (value ? "1" : "0") + iv.substring(x + 1);
-                                } else if (names.contains(name)) {
-                                    int x = names.indexOf(name);
-                                    ov = ov.substring(0, x) + (value ? "1" : "0") + ov.substring(x + 1);
-                                }
-                            } else if (nl.startsWith("-> State:")) {
-                                elements.add(new ScenarioElement(ie, iv, new OutputAction(ov, oe)));
-                            } else if (!nl.startsWith("--") || nl.startsWith("-- specification")) {
-                                last = nl;
-                                break;
-                            }
-                        }
-                        elements.add(new ScenarioElement(ie, iv, new OutputAction(ov, oe)));
-                        VarsActionsScenario scenario = new VarsActionsScenario(elements);
-                        synchronized (scenarios) {
-                            scenarios.add(scenario);
-                        }
+                        last = readCounterexample(sc);
                         num++;
                     } else {
                         System.out.println(nl);
@@ -194,6 +148,116 @@ public class TLFitness {
             e.printStackTrace();
             throw new AssertionError();
         }
+    }
+
+    private static double interact(String s, int length) {
+        try {
+            Process p = Runtime.getRuntime().exec("NuSMV-2.5.4-x86_64-unknown-linux-gnu/bin/NuSMV -bmc -bmc_length " + length);
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
+            writer.write(s);
+            writer.close();
+            Scanner sc = new Scanner(new BufferedInputStream(p.getInputStream()));
+            int t = 0;
+            String last = null;
+            int num = 0;
+            while (sc.hasNext() || last != null) {
+                String nl;
+                if (last != null) {
+                    nl = last;
+                    last = null;
+                } else {
+                    nl = sc.nextLine();
+                }
+                if (nl.startsWith("-- specification")) {
+                    if (nl.endsWith("false")) {
+                        last = readCounterexample(sc);
+                        num++;
+                    } else {
+                        System.out.println(nl);
+                        throw new AssertionError();
+                    }
+                } else if (nl.startsWith("-- no counterexample") && nl.endsWith(length + "")) {
+                    t++;
+                    num++;
+                }
+            }
+            if (num != specNum) {
+                Writer writer1 = new FileWriter(new File("error_case.smv"));
+                writer1.write(s);
+                writer1.close();
+                System.err.println("Unexpected number of specifications (see \"error_case.smv\").");
+                throw new AssertionError();
+            }
+            synchronized (scenarios) {
+                maxSatisfiedSpecifications = Math.max(maxSatisfiedSpecifications, t);
+                averageSatisfiedSpecifications += t;
+                fitnessEvaluations++;
+            }
+            return (double) t / specNum;
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new AssertionError();
+        }
+    }
+
+    private static String readCounterexample(Scanner sc) {
+        String nl, last = null;
+        String ie = "";
+        String oe = "";
+        String iv = "";
+        for (int i = 0; i < MultiMaskEfsmSkeleton.PREDICATE_NAMES.size(); i++) {
+            iv += "0";
+        }
+        String ov = "";
+        List<ScenarioElement> elements = new ArrayList<>();
+        for (int i = 0; i < names.size(); i++) {
+            ov += "0";
+        }
+        while (true) {
+            nl = sc.nextLine();
+            if (nl.startsWith("-> State:")) {
+                break;
+            }
+        }
+        while (sc.hasNext()) {
+            nl = sc.nextLine();
+            if (!nl.startsWith("-") && nl.contains("=")) {
+                Scanner scanner = new Scanner(nl);
+                String name = scanner.next();
+                scanner.next();
+                boolean value = scanner.next().equals("TRUE");
+                if (MultiMaskEfsmSkeleton.INPUT_EVENTS.containsKey(name)) {
+                    if (value) {
+                        ie = name;
+                    } else if (ie.equals(name)) {
+                        ie = "";
+                    }
+                } else if (outputEvents.contains(name)) {
+                    if (value) {
+                        oe = name;
+                    } else if (oe.equals(name)) {
+                        oe = "";
+                    }
+                } else if (MultiMaskEfsmSkeleton.PREDICATE_NAMES.contains(name)) {
+                    int x = MultiMaskEfsmSkeleton.PREDICATE_NAMES.indexOf(name);
+                    iv = iv.substring(0, x) + (value ? "1" : "0") + iv.substring(x + 1);
+                } else if (names.contains(name)) {
+                    int x = names.indexOf(name);
+                    ov = ov.substring(0, x) + (value ? "1" : "0") + ov.substring(x + 1);
+                }
+            } else if (nl.startsWith("-> State:")) {
+                elements.add(new ScenarioElement(ie, iv, new OutputAction(ov, oe)));
+            } else if (!nl.startsWith("--") || nl.startsWith("-- specification") || nl.startsWith("-- no counterexample")) {
+                last = nl;
+                break;
+            }
+        }
+        elements.add(new ScenarioElement(ie, iv, new OutputAction(ov, oe)));
+        VarsActionsScenario scenario = new VarsActionsScenario(elements);
+        synchronized (scenarios) {
+            scenarios.add(scenario);
+        }
+        return last;
     }
 
     public static String getSMV(MultiMaskEfsm instance) {
@@ -300,6 +364,7 @@ public class TLFitness {
             maxSatisfiedSpecifications = 0;
             fitnessEvaluations = 0;
             System.out.println("NSSize: " + scenarios.size());
+            System.out.println("Time: " + time + ", num: " + number + ", avg: " + time / number);
         }
     }
 }
