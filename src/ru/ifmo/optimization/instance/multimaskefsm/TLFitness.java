@@ -15,7 +15,7 @@ public class TLFitness {
     private static List<String> names;
     private static String vars;
     private static String assignments;
-    private static String spec;
+    private static String spec = "";
     private static List<String> outputEvents;
     private static int fitnessEvaluations, maxSatisfiedSpecifications;
     private static double averageSatisfiedSpecifications, averageNegativeScenariosFitness;
@@ -54,11 +54,13 @@ public class TLFitness {
     }
 
     private static void initSpec(String specFileName) throws FileNotFoundException {
-        Scanner sc = new Scanner(new File(specFileName));
-        specNum = sc.nextInt();
-        spec = "";
-        while (sc.hasNext()) {
-            spec += sc.nextLine() + "\n";
+        if (specFileName != null) {
+            Scanner sc = new Scanner(new File(specFileName));
+            specNum = sc.nextInt();
+            spec = "";
+            while (sc.hasNext()) {
+                spec += sc.nextLine() + "\n";
+            }
         }
     }
 
@@ -274,7 +276,7 @@ public class TLFitness {
         for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
             State state = skeleton.getState(i);
             for (int e = 0; e < MultiMaskEfsmSkeleton.INPUT_EVENT_COUNT; e++) {
-                for (int t = 0; t < MultiMaskEfsmSkeleton.TRANSITION_GROUPS_COUNT; t++) {
+                for (int t = 0; t < state.getTGSize(e); t++) {
                     TransitionGroup tg = state.getTransitionGroup(e, t);
                     if (tg != null) {
                         List<Integer> m = tg.getMeaningfulPredicateIds();

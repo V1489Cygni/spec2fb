@@ -1,19 +1,19 @@
 package ru.ifmo.optimization.instance.multimaskefsm.task;
 
-import ru.ifmo.optimization.instance.multimaskefsm.*;
+import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskEfsm;
+import ru.ifmo.optimization.instance.multimaskefsm.TLFitness;
+import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
+import ru.ifmo.optimization.runner.config.OptimizationRunnerConfig;
+import ru.ifmo.optimization.task.AbstractOptimizationTask;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 public class Test {
     public static void main(String[] args) throws IOException {
-        MultiMaskEfsmSkeleton.STATE_COUNT = 11;
+        /*MultiMaskEfsmSkeleton.STATE_COUNT = 11;
         MultiMaskEfsmSkeleton.PREDICATE_COUNT = 10;
         MultiMaskEfsmSkeleton.INPUT_EVENT_COUNT = 2;
         MultiMaskEfsmSkeleton.MEANINGFUL_PREDICATES_COUNT = 10;
@@ -65,6 +65,19 @@ public class Test {
 
         Writer writer = new FileWriter(new File("result.smv"));
         writer.write(TLFitness.getSMV(efsm));
+        writer.close();*/
+        if (args.length != 2) {
+            System.err.println("Expected two arguments: input and output filenames.");
+            System.exit(1);
+        }
+        OptimizationRunnerConfig config = new OptimizationRunnerConfig("experiment.properties");
+        AbstractTaskFactory factory = config.getTaskFactory();
+        AbstractOptimizationTask task = factory.createTask();
+        TLFitness.init("spec.txt");
+        MultiMaskEfsm efsm = new MultiMaskEfsm(args[0]);
+        String s = TLFitness.getSMV(efsm);
+        Writer writer = new FileWriter(new File(args[1]));
+        writer.write(s);
         writer.close();
     }
 }

@@ -101,6 +101,10 @@ public class State {
         return transitionGroups[eventIndex][i];
     }
 
+    public int getTGSize(int eventIndex) {
+        return transitionGroups[eventIndex].length;
+    }
+
     public Collection<Integer> getMeaningfulPredicateIds(String inputEvent) {
         Set<Integer> result = new HashSet<Integer>();
         int eventIndex = MultiMaskEfsmSkeleton.INPUT_EVENTS.get(inputEvent);

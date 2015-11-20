@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 public class MultiMaskEfsm {
     private static Pattern transitionPattern = Pattern.compile("^([0-9]+)\\s->\\s([0-9]+)\\s\\[label\\s=\\s\"([A-Z]+)\\s\\[(.+)\\] \\(\\)\"\\];$");
-    private static Pattern statePattern = Pattern.compile("^([0-9]+)\\s\\[label=\"s_([01x]+)\\(([A-Z]+)\\)\"\\];$");
+    private static Pattern statePattern = Pattern.compile("^([0-9]+)\\s\\[label=\"s_([01x]+(_[0-9]+)?)\\(([A-Z]*)\\)\"\\];$");
     private MultiMaskEfsmSkeleton skeleton;
     private OutputAction[] actions;
 
@@ -49,7 +49,7 @@ public class MultiMaskEfsm {
                 }
                 int state = Integer.parseInt(m.group(1));
                 String algorithm = m.group(2);
-                String outputEvent = m.group(3);
+                String outputEvent = m.group(4);
                 actions[state] = new OutputAction(algorithm, outputEvent);
                 continue;
             }
@@ -187,8 +187,7 @@ public class MultiMaskEfsm {
                 } else {
                     labelSet.put(label, 1);
                 }
-                String ss = state == getInitialState() ? "S" : "s";
-                sb.append(stateCounter + " [label=\"" + ss + state + "_" + label + "(" + actions[state].getOutputEvent() + ")" + "\"];\n");
+                sb.append(stateCounter + " [label=\"s_" + label + "(" + actions[state].getOutputEvent() + ")" + "\"];\n");
                 stateIdMap.put(state, stateCounter);
                 stateCounter++;
             }
