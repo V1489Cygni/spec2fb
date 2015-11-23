@@ -1,9 +1,11 @@
-4
+1
 
-LTLSPEC G(!(c1Extend & c1Retract))
-LTLSPEC G(!(c2Extend & c2Retract))
-LTLSPEC G(vcExtend -> !((c1Extend & !c1End) | (c1Retract & !c1Home) | (c2Extend & !c2End) | (c2Retract & !c2Home)))
-LTLSPEC G((c1Extend & !c1End) | (c1Retract & !c1Home) | (c2Extend & !c2End) | (c2Retract & !c2Home) -> vcHome)
+--LTLSPEC G(!(c1Extend & c1Retract))
+--LTLSPEC G(!(c2Extend & c2Retract))
+--LTLSPEC G(vcExtend -> !((c1Extend & !c1End) | (c1Retract & !c1Home) | (c2Extend & !c2End) | (c2Retract & !c2Home)))
+--LTLSPEC G((c1Extend & !c1End) | (c1Retract & !c1Home) | (c2Extend & !c2End) | (c2Retract & !c2Home) -> vcHome)
+
+LTLSPEC G(pp1 -> F(vp1))
 
 --CTLSPEC AG(pp1 -> EF(vp1))
 --CTLSPEC AG(pp2 -> EF(vp2))

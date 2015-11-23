@@ -1,9 +1,11 @@
 package ru.ifmo.optimization.instance.multimaskefsm;
 
 import ru.ifmo.optimization.instance.Constructable;
+import ru.ifmo.optimization.instance.multimaskefsm.task.VarsActionsScenario;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.util.Digest;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,7 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
     public static List<String> PREDICATE_NAMES;
     private int initialState;
     private State[] states;
+    private List<VarsActionsScenario> counterExamples = new ArrayList<>();
 
     public MultiMaskEfsmSkeleton() {
         states = new State[STATE_COUNT];
@@ -52,6 +55,18 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
             }
         }
         return formula.toString();
+    }
+
+    public void clearCouterExamples() {
+        counterExamples.clear();
+    }
+
+    public List<VarsActionsScenario> getCounterExamples() {
+        return counterExamples;
+    }
+
+    public void addCounterExample(VarsActionsScenario scenario) {
+        counterExamples.add(scenario);
     }
 
     public void markTransitionsUnused() {
@@ -155,12 +170,15 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
         for (int stateId = 0; stateId < states.length; stateId++) {
             State state = states[stateId];
             for (int eventId = 0; eventId < MultiMaskEfsmSkeleton.INPUT_EVENT_COUNT; eventId++) {
-                for (int tgId = 0; tgId < MultiMaskEfsmSkeleton.TRANSITION_GROUPS_COUNT; tgId++) {
+                for (int tgId = 0; tgId < states[stateId].getTransitionGroupCount(eventId); tgId++) {
                     TransitionGroup tg = state.getTransitionGroup(eventId, tgId);
                     for (int tranId = 0; tranId < tg.getTransitionsCount(); tranId++) {
-                        if (!tg.isTransitionUsed(tranId)) {
+                        if (!tg.isTransitionDefined(tranId)) {
                             continue;
                         }
+//                        if (!tg.isTransitionUsed(tranId)) {
+//                            continue;
+//                        }
                         sb.append(stateIdMap.get(stateId) + " -> " + stateIdMap.get(tg.getNewState(tranId))
                                 + " [label = \"REQ [" + tranIdToLabel(tranId, tg.getMeaningfulPredicateIds()) + "] ()\"];\n");
                     }

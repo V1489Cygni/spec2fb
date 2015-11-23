@@ -83,6 +83,10 @@ public class TransitionGroup {
     public int getTransitionsCount() {
         return newState.length;
     }
+    
+    public boolean isTransitionDefined(int transitionIndex) {
+    	return newState[transitionIndex] != -1;
+    }
 
     @Override
     public String toString() {

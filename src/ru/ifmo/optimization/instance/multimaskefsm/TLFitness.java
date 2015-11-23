@@ -78,6 +78,7 @@ public class TLFitness {
     }
 
     public static Pair<Double, Double> getFitness(MultiMaskEfsm instance, MultiMaskTask task) {
+        instance.getSkeleton().clearCouterExamples();
         String s = getSMV(instance);
         synchronized (scenarios) {
             time -= System.currentTimeMillis();
@@ -90,7 +91,11 @@ public class TLFitness {
         double d2 = 0;
         synchronized (scenarios) {
             for (VarsActionsScenario scenario : scenarios) {
-                d2 += task.runScenario(instance, scenario).getFitness() == 1.0 ? 1 : 0;
+                boolean b = task.runScenario(instance, scenario).getFitness() == 1.0;
+                d2 += b ? 1 : 0;
+                if (b) {
+                    instance.getSkeleton().addCounterExample(scenario);
+                }
             }
             if (scenarios.size() == 0) {
                 d2 = 1;
@@ -276,7 +281,7 @@ public class TLFitness {
         for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
             State state = skeleton.getState(i);
             for (int e = 0; e < MultiMaskEfsmSkeleton.INPUT_EVENT_COUNT; e++) {
-                for (int t = 0; t < state.getTGSize(e); t++) {
+                for (int t = 0; t < state.getTransitionGroupCount(e); t++) {
                     TransitionGroup tg = state.getTransitionGroup(e, t);
                     if (tg != null) {
                         List<Integer> m = tg.getMeaningfulPredicateIds();

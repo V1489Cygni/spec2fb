@@ -101,7 +101,7 @@ public class State {
         return transitionGroups[eventIndex][i];
     }
 
-    public int getTGSize(int eventIndex) {
+    public int getTransitionGroupCount(int eventIndex) {
         return transitionGroups[eventIndex].length;
     }
 

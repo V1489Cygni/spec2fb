@@ -106,7 +106,7 @@ public class OneTestPerClusterTestsModelCheckingTaskFactory extends ClusteringTe
 		for (int i = 0; i < tests.size(); i++) {
 			double sum = tests.size() + numberOfClusters * (factor - 1.0);
 			groupCost.add(hardTestIds.contains(i) ? factor / sum : 1.0 / sum);
-			System.out.print("Test " + i + ": w=" + groupCost.get(groupCost.size() - 1));
+			System.out.print("EccToSmv " + i + ": w=" + groupCost.get(groupCost.size() - 1));
 		}
 		System.out.println();
 
