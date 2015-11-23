@@ -36,7 +36,7 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
         Random random = RandomProvider.getInstance();
         MultiMaskEfsmSkeleton result = new MultiMaskEfsmSkeleton(individual);
         MutationCollection<MultiMaskEfsmMutation> mutations = new MutationCollection<>();
-        trace.stream().filter(step -> random.nextDouble() < probability).forEach(step -> {
+        trace.stream().filter(step -> step.group != -1 && random.nextDouble() < probability).forEach(step -> {
             int sid = random.nextInt(MultiMaskEfsmSkeleton.STATE_COUNT);
             mutations.add(new DestinationStateMutation(step.state, step.event, step.group, step.index, sid));
             result.getState(step.state).getTransitionGroup(step.event, step.group).setNewState(step.index, sid);
