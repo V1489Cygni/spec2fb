@@ -1,7 +1,5 @@
 package ru.ifmo.optimization.instance.multimaskefsm;
 
-import javafx.util.Pair;
-import ru.ifmo.optimization.instance.multimaskefsm.task.MultiMaskTask;
 import ru.ifmo.optimization.instance.multimaskefsm.task.ScenarioElement;
 import ru.ifmo.optimization.instance.multimaskefsm.task.VarsActionsScenario;
 
@@ -9,7 +7,6 @@ import java.io.*;
 import java.util.*;
 
 public class TLFitness {
-    private static final Set<VarsActionsScenario> scenarios = new HashSet<>();
     private static boolean initialized;
     private static int specNum;
     private static List<String> names;
@@ -18,7 +15,7 @@ public class TLFitness {
     private static String spec = "";
     private static List<String> outputEvents;
     private static int fitnessEvaluations, maxSatisfiedSpecifications;
-    private static double averageSatisfiedSpecifications, averageNegativeScenariosFitness;
+    private static double averageSatisfiedSpecifications;
     private static long time, number;
 
     private static void initOE() throws FileNotFoundException {
@@ -65,7 +62,7 @@ public class TLFitness {
     }
 
     public static void init(String specFileName) throws FileNotFoundException {
-        synchronized (scenarios) {
+        synchronized (TLFitness.class) {
             if (!initialized) {
                 initOE();
                 initNames();
@@ -77,37 +74,21 @@ public class TLFitness {
         }
     }
 
-    public static Pair<Double, Double> getFitness(MultiMaskEfsm instance, MultiMaskTask task) {
-        instance.getSkeleton().clearCouterExamples();
+    public static double getFitness(MultiMaskEfsm instance) {
+        instance.getSkeleton().clearCounterExamples();
         String s = getSMV(instance);
-        synchronized (scenarios) {
+        synchronized (TLFitness.class) {
             time -= System.currentTimeMillis();
         }
-        double d = interact(s);
-        synchronized (scenarios) {
+        double d = interact(instance, s);
+        synchronized (TLFitness.class) {
             time += System.currentTimeMillis();
             number++;
         }
-        double d2 = 0;
-        synchronized (scenarios) {
-            for (VarsActionsScenario scenario : scenarios) {
-                boolean b = task.runScenario(instance, scenario).getFitness() == 1.0;
-                d2 += b ? 1 : 0;
-                if (b) {
-                    instance.getSkeleton().addCounterExample(scenario);
-                }
-            }
-            if (scenarios.size() == 0) {
-                d2 = 1;
-            } else {
-                d2 = 1 - d2 / scenarios.size();
-            }
-            averageNegativeScenariosFitness += d2;
-        }
-        return new Pair<>(d, d2);
+        return d;
     }
 
-    private static double interact(String s) {
+    private static double interact(MultiMaskEfsm instance, String s) {
         try {
             Process p = Runtime.getRuntime().exec("NuSMV-2.5.4-x86_64-unknown-linux-gnu/bin/NuSMV");
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
@@ -130,7 +111,7 @@ public class TLFitness {
                         t++;
                         num++;
                     } else if (nl.endsWith("false")) {
-                        last = readCounterexample(sc);
+                        last = readCounterexample(instance, sc);
                         num++;
                     } else {
                         System.out.println(nl);
@@ -145,7 +126,7 @@ public class TLFitness {
                 System.err.println("Unexpected number of specifications (see \"error_case.smv\").");
                 throw new AssertionError();
             }
-            synchronized (scenarios) {
+            synchronized (TLFitness.class) {
                 maxSatisfiedSpecifications = Math.max(maxSatisfiedSpecifications, t);
                 averageSatisfiedSpecifications += t;
                 fitnessEvaluations++;
@@ -157,7 +138,7 @@ public class TLFitness {
         }
     }
 
-    private static double interact(String s, int length) {
+    private static double interact(MultiMaskEfsm instance, String s, int length) {
         try {
             Process p = Runtime.getRuntime().exec("NuSMV-2.5.4-x86_64-unknown-linux-gnu/bin/NuSMV -bmc -bmc_length " + length);
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
@@ -177,7 +158,7 @@ public class TLFitness {
                 }
                 if (nl.startsWith("-- specification")) {
                     if (nl.endsWith("false")) {
-                        last = readCounterexample(sc);
+                        last = readCounterexample(instance, sc);
                         num++;
                     } else {
                         System.out.println(nl);
@@ -195,7 +176,7 @@ public class TLFitness {
                 System.err.println("Unexpected number of specifications (see \"error_case.smv\").");
                 throw new AssertionError();
             }
-            synchronized (scenarios) {
+            synchronized (TLFitness.class) {
                 maxSatisfiedSpecifications = Math.max(maxSatisfiedSpecifications, t);
                 averageSatisfiedSpecifications += t;
                 fitnessEvaluations++;
@@ -207,7 +188,7 @@ public class TLFitness {
         }
     }
 
-    private static String readCounterexample(Scanner sc) {
+    private static String readCounterexample(MultiMaskEfsm instance, Scanner sc) {
         String nl, last = null;
         String ie = "";
         String oe = "";
@@ -261,9 +242,7 @@ public class TLFitness {
         }
         elements.add(new ScenarioElement(ie, iv, new OutputAction(ov, oe)));
         VarsActionsScenario scenario = new VarsActionsScenario(elements);
-        synchronized (scenarios) {
-            scenarios.add(scenario);
-        }
+        instance.getSkeleton().addCounterExample(scenario);
         return last;
     }
 
@@ -362,15 +341,12 @@ public class TLFitness {
     }
 
     public static void printStats() {
-        synchronized (scenarios) {
+        synchronized (TLFitness.class) {
             System.out.println("TLFitness: satisfied_specifications: {max: " + maxSatisfiedSpecifications +
-                    ", average: " + (averageSatisfiedSpecifications / fitnessEvaluations) +
-                    "}, average_negative_scenarios_fitness: " + (averageNegativeScenariosFitness / fitnessEvaluations));
-            averageNegativeScenariosFitness = 0;
+                    ", average: " + (averageSatisfiedSpecifications / fitnessEvaluations) + "}");
             averageSatisfiedSpecifications = 0;
             maxSatisfiedSpecifications = 0;
             fitnessEvaluations = 0;
-            System.out.println("NSSize: " + scenarios.size());
             System.out.println("Time: " + time + ", num: " + number + ", avg: " + time / number);
         }
     }

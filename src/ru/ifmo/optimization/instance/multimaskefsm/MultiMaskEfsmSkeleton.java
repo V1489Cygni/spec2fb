@@ -19,9 +19,9 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
     public static int TRANSITION_GROUPS_COUNT;
     public static Map<String, Integer> INPUT_EVENTS;
     public static List<String> PREDICATE_NAMES;
+    private final List<VarsActionsScenario> counterExamples = new ArrayList<>();
     private int initialState;
     private State[] states;
-    private List<VarsActionsScenario> counterExamples = new ArrayList<>();
 
     public MultiMaskEfsmSkeleton() {
         states = new State[STATE_COUNT];
@@ -34,6 +34,7 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
     public MultiMaskEfsmSkeleton(MultiMaskEfsmSkeleton other) {
         states = new State[STATE_COUNT];
         this.initialState = other.initialState;
+        counterExamples.addAll(other.counterExamples);
         for (int i = 0; i < states.length; i++) {
             states[i] = new State(other.states[i]);
         }
@@ -57,12 +58,12 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
         return formula.toString();
     }
 
-    public void clearCouterExamples() {
-        counterExamples.clear();
-    }
-
     public List<VarsActionsScenario> getCounterExamples() {
         return counterExamples;
+    }
+
+    public void clearCounterExamples() {
+        counterExamples.clear();
     }
 
     public void addCounterExample(VarsActionsScenario scenario) {

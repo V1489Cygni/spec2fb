@@ -264,10 +264,8 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
         f /= (double) s.length;
         c /= (double) s.length;
         e /= (double) s.length;
-        javafx.util.Pair<Double, Double> r = TLFitness.getFitness(labeledInstance, this);
 
-        f = 0.45 * (0.9 * f + 0.1 * e) + 0.45 * r.getKey() + 0.1 * r.getValue();
-        //f = 0.9 * f + 0.1 * e;
+        f = 0.9 * f + 0.1 * e;
         return new RunData(f, c, e);
     }
 
@@ -288,6 +286,10 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
                 f = getF(labeledInstance, scenarios);
             }
         }
+
+        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance)) / 2;
+        instance.clearCounterExamples();
+        instance.getCounterExamples().addAll(labeledInstance.getSkeleton().getCounterExamples());
 
         if (f.fitness >= 1.0) {
             f.fitness = 1.1;

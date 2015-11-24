@@ -1,6 +1,5 @@
 package ru.ifmo.optimization.instance.multimaskefsm;
 
-import ru.ifmo.ctddev.util.RandomProvider;
 import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
 import ru.ifmo.optimization.algorithm.muaco.mutator.MutatedInstanceMetaData;
 import ru.ifmo.optimization.instance.Mutator;
@@ -8,6 +7,7 @@ import ru.ifmo.optimization.instance.multimaskefsm.mutation.DestinationStateMuta
 import ru.ifmo.optimization.instance.multimaskefsm.mutation.MultiMaskEfsmMutation;
 import ru.ifmo.optimization.instance.multimaskefsm.task.ScenarioElement;
 import ru.ifmo.optimization.instance.multimaskefsm.task.VarsActionsScenario;
+import ru.ifmo.random.RandomProvider;
 
 import java.util.ArrayList;
 import java.util.List;
