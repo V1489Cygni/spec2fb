@@ -9,6 +9,7 @@ import ru.ifmo.optimization.task.AbstractOptimizationTask;
 import ru.ifmo.util.Pair;
 import ru.ifmo.util.StringUtils;
 
+import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -287,11 +288,12 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
             }
         }
 
-        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance)) / 2;
         instance.clearCounterExamples();
+        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance)) / 2;
         instance.getCounterExamples().addAll(labeledInstance.getSkeleton().getCounterExamples());
 
         if (f.fitness >= 1.0) {
+            storeResult(labeledInstance);
             f.fitness = 1.1;
             return new FitInstance<MultiMaskEfsmSkeleton>(instance, f.fitness);
         }
@@ -325,7 +327,11 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
             }
         }
 
+        instance.getSkeleton().clearCounterExamples();
+        f.fitness = (f.fitness + TLFitness.getFitness(instance)) / 2;
+
         if (f.fitness >= 1.0) {
+            storeResult(instance);
             f.fitness = 1.1;
             return new FitInstance<MultiMaskEfsmSkeleton>(instance.getSkeleton(), f.fitness);
         }
@@ -338,7 +344,11 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
     public double getFitness(MultiMaskEfsm labeledInstance) {
         RunData f = getF(labeledInstance, scenarios);
 
+        labeledInstance.getSkeleton().clearCounterExamples();
+        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance)) / 2;
+
         if (f.fitness >= 1.0) {
+            storeResult(labeledInstance);
             f.fitness = 1.1;
             return 1.1;
         }
@@ -349,12 +359,34 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
     public double getFitness(MultiMaskEfsm labeledInstance, VarsActionsScenario[] s) {
         RunData f = getF(labeledInstance, s);
 
+        labeledInstance.getSkeleton().clearCounterExamples();
+        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance)) / 2;
+
         if (f.fitness >= 1.0) {
+            storeResult(labeledInstance);
             f.fitness = 1.1;
             return 1.1;
         }
 
         return f.fitness;
+    }
+
+    private void storeResult(MultiMaskEfsm ind) {
+        try {
+            String p = TLFitness.prefix;
+            Writer writer = new FileWriter(new File(p + "result.gv"));
+            writer.write(ind.toGraphvizString());
+            writer.close();
+            writer = new FileWriter(new File(p + "result.smv"));
+            writer.write(TLFitness.getSMV(ind));
+            writer.close();
+            FileOutputStream fos = new FileOutputStream(p + "result.data");
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+            oos.writeObject(ind);
+            oos.close();
+        } catch (IOException e) {
+            System.err.println("Error while storing result: " + e.getMessage());
+        }
     }
 
     @Override

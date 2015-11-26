@@ -1,6 +1,8 @@
 package ru.ifmo.optimization.instance.multimaskefsm;
 
-public class OutputAction {
+import java.io.Serializable;
+
+public class OutputAction implements Serializable {
     private String algorithm;
     private String outputEvent;
 

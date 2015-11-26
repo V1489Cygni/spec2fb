@@ -19,7 +19,7 @@ public class EccToSmv {
         OptimizationRunnerConfig config = new OptimizationRunnerConfig("experiment.properties");
         AbstractTaskFactory factory = config.getTaskFactory();
         factory.createTask();
-        TLFitness.init(null);
+        TLFitness.init(null, null, 0);
         MultiMaskEfsm efsm = new MultiMaskEfsm(args[0]);
         String s = TLFitness.getSMV(efsm);
         Writer writer = new FileWriter(new File(args[1]));

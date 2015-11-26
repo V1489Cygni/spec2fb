@@ -22,7 +22,6 @@ public class ChangeFinalStateMutatorWithVerification implements Mutator<FSM, Fsm
                                                    double counterexampleTransitionMutationProbability) {
         this.ordinaryTransitionMutationProbability = ordinaryTransitionMutationProbability;
         this.counterexampleTransitionMutationProbability = counterexampleTransitionMutationProbability;
-        System.out.println("A");
     }
 
     @Override

@@ -5,13 +5,14 @@ import ru.ifmo.optimization.instance.multimaskefsm.task.VarsActionsScenario;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.util.Digest;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 
-public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleton> {
+public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleton>, Serializable {
     public static int STATE_COUNT;
     public static int PREDICATE_COUNT;
     public static int INPUT_EVENT_COUNT;

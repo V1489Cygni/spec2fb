@@ -1,9 +1,10 @@
 package ru.ifmo.optimization.instance.multimaskefsm;
 
+import java.io.Serializable;
 import java.util.*;
 
 
-public class State {
+public class State implements Serializable {
     private TransitionGroup[][] transitionGroups;
 
     public State() {

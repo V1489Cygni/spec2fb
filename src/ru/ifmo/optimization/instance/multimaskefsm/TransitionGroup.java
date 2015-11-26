@@ -1,10 +1,11 @@
 package ru.ifmo.optimization.instance.multimaskefsm;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class TransitionGroup {
+public class TransitionGroup implements Serializable {
     private boolean mask[];
     private int[] newState;
     private boolean[] transitionUsed;

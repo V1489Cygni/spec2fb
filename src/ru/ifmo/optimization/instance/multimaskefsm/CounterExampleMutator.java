@@ -9,11 +9,10 @@ import ru.ifmo.optimization.instance.multimaskefsm.task.ScenarioElement;
 import ru.ifmo.optimization.instance.multimaskefsm.task.VarsActionsScenario;
 import ru.ifmo.random.RandomProvider;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, MultiMaskEfsmMutation> {
+    private static final int LAMBDA = 1;
     private double probability;
 
     public CounterExampleMutator(double probability) {
@@ -22,26 +21,33 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
 
     @Override
     public MutatedInstanceMetaData<MultiMaskEfsmSkeleton, MultiMaskEfsmMutation> apply(MultiMaskEfsmSkeleton individual) {
-        if (individual.getCounterExamples().size() == 0) {
+        List<Step> transitions = getTransitions(individual);
+        if (transitions.isEmpty()) {
             return new MutatedInstanceMetaData<>(new MultiMaskEfsmSkeleton(individual), new MutationCollection<>());
         }
-        List<VarsActionsScenario> counterExamples = individual.getCounterExamples();
-        VarsActionsScenario scenario = counterExamples.get(0);
-        for (VarsActionsScenario s : counterExamples) {
-            if (s.size() > scenario.size()) {
-                scenario = s;
-            }
+        Map<Step, Integer> num = new HashMap<>();
+        for (Step s : transitions) {
+            num.put(s, 1);
         }
-        List<Step> trace = getTrace(individual, scenario);
+        for (VarsActionsScenario s : individual.getCounterExamples()) {
+            getTrace(individual, s, num);
+        }
+        double sum = 0;
+        for (Step s : transitions) {
+            sum += num.get(s);
+        }
+        int i = 0;
+        double cur = num.get(transitions.get(0)) / sum;
         Random random = RandomProvider.getInstance();
-        MultiMaskEfsmSkeleton result = new MultiMaskEfsmSkeleton(individual);
-        MutationCollection<MultiMaskEfsmMutation> mutations = new MutationCollection<>();
-        trace.stream().filter(step -> step.group != -1 && random.nextDouble() < probability).forEach(step -> {
-            int sid = random.nextInt(MultiMaskEfsmSkeleton.STATE_COUNT);
-            mutations.add(new DestinationStateMutation(step.state, step.event, step.group, step.index, sid));
-            result.getState(step.state).getTransitionGroup(step.event, step.group).setNewState(step.index, sid);
-        });
-        return new MutatedInstanceMetaData<>(result, mutations);
+        while (random.nextDouble() > cur) {
+            i++;
+            cur += num.get(transitions.get(i)) / sum;
+        }
+        Step s = transitions.get(i);
+        MultiMaskEfsmSkeleton ind = new MultiMaskEfsmSkeleton(individual);
+        int x = random.nextInt(MultiMaskEfsmSkeleton.STATE_COUNT);
+        ind.getState(s.state).getTransitionGroup(s.event, s.group).setNewState(s.index, x);
+        return new MutatedInstanceMetaData<>(ind, new MutationCollection<>(new DestinationStateMutation(s.state, s.event, s.group, s.index, x)));
     }
 
     @Override
@@ -59,8 +65,23 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
         this.probability = probability;
     }
 
-    private List<Step> getTrace(MultiMaskEfsmSkeleton individual, VarsActionsScenario scenario) {
-        List<Step> trace = new ArrayList<>();
+    private List<Step> getTransitions(MultiMaskEfsmSkeleton individual) {
+        List<Step> transitions = new ArrayList<>();
+        for (int state = 0; state < MultiMaskEfsmSkeleton.STATE_COUNT; state++) {
+            for (int event = 0; event < MultiMaskEfsmSkeleton.INPUT_EVENT_COUNT; event++) {
+                for (int group = 0; group < individual.getState(state).getTransitionGroupCount(event); group++) {
+                    for (int index = 0; index < individual.getState(state).getTransitionGroup(event, group).getTransitionsCount(); index++) {
+                        if (individual.getState(state).getTransitionGroup(event, group).getNewState(index) != -1) {
+                            transitions.add(new Step(state, event, group, index));
+                        }
+                    }
+                }
+            }
+        }
+        return transitions;
+    }
+
+    private void getTrace(MultiMaskEfsmSkeleton individual, VarsActionsScenario scenario, Map<Step, Integer> num) {
         int state = individual.getInitialState();
         for (int i = 0; i < scenario.size(); i++) {
             ScenarioElement element = scenario.get(i);
@@ -85,17 +106,22 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
                 if (newState == -1) {
                     continue;
                 }
-
                 g.setTransitionUsed(transitionIndex);
                 res = newState;
                 group = j;
                 index = transitionIndex;
                 break;
             }
-            trace.add(new Step(state, eid, group, index));
-            state = res;
+            if (group != -1) {
+                Step s = new Step(state, eid, group, index);
+                if (num.containsKey(s)) {
+                    num.put(s, num.get(s) + LAMBDA);
+                } else {
+                    System.err.println("Warning: Unexpected step in trace.");
+                }
+                state = res;
+            }
         }
-        return trace;
     }
 
     private static class Step {
@@ -106,6 +132,17 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
             this.event = event;
             this.group = group;
             this.index = index;
+        }
+
+        @Override
+        public int hashCode() {
+            return state << 24 + event << 16 + group << 8 + index;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof Step && state == ((Step) obj).state && event == ((Step) obj).event
+                    && group == ((Step) obj).group && index == ((Step) obj).index;
         }
     }
 }

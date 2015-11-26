@@ -7,6 +7,7 @@ import java.io.*;
 import java.util.*;
 
 public class TLFitness {
+    public static String prefix;
     private static boolean initialized;
     private static int specNum;
     private static List<String> names;
@@ -17,6 +18,7 @@ public class TLFitness {
     private static int fitnessEvaluations, maxSatisfiedSpecifications;
     private static double averageSatisfiedSpecifications;
     private static long time, number;
+    private static int bmcLen;
 
     private static void initOE() throws FileNotFoundException {
         Scanner sc = new Scanner(new File("oe.txt"));
@@ -61,7 +63,7 @@ public class TLFitness {
         }
     }
 
-    public static void init(String specFileName) throws FileNotFoundException {
+    public static void init(String specFileName, String prefix1, int bmc) throws FileNotFoundException {
         synchronized (TLFitness.class) {
             if (!initialized) {
                 initOE();
@@ -69,7 +71,10 @@ public class TLFitness {
                 initVars();
                 initAssignments();
                 initSpec(specFileName);
+                prefix = prefix1;
+                bmcLen = bmc;
                 initialized = true;
+                System.out.println("TLFitness initialized with bmc=" + bmcLen);
             }
         }
     }
@@ -80,7 +85,12 @@ public class TLFitness {
         synchronized (TLFitness.class) {
             time -= System.currentTimeMillis();
         }
-        double d = interact(instance, s);
+        double d;
+        if (bmcLen == 0) {
+            d = interact(instance, s);
+        } else {
+            d = interact(instance, s, bmcLen);
+        }
         synchronized (TLFitness.class) {
             time += System.currentTimeMillis();
             number++;

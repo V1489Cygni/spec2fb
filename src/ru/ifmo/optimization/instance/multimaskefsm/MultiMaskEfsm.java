@@ -2,11 +2,12 @@ package ru.ifmo.optimization.instance.multimaskefsm;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.Serializable;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MultiMaskEfsm {
+public class MultiMaskEfsm implements Serializable {
     private static Pattern transitionPattern = Pattern.compile("^([0-9]+)\\s->\\s([0-9]+)\\s\\[label\\s=\\s\"([A-Z]+)\\s\\[(.+)\\] \\(\\)\"\\];$");
     private static Pattern statePattern = Pattern.compile("^([0-9]+)\\s\\[label=\"s_([01x]+(_[0-9]+)?)\\(([A-Z]*)\\)\"\\];$");
     private MultiMaskEfsmSkeleton skeleton;

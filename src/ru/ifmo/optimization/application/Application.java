@@ -37,7 +37,7 @@ public class Application {
         }
         OptimizationRunnerConfig config = new OptimizationRunnerConfig("experiment.properties");
         try {
-            TLFitness.init(config.getSpecFileName());
+            TLFitness.init(config.getSpecFileName(), config.getPrefix(), config.getBMCLen());
         } catch (FileNotFoundException e) {
             System.err.println("Error while reading specification: " + e.getMessage());
             System.exit(1);
