@@ -48,18 +48,6 @@ public class OptimizationRunnerConfig {
         }
     }
 
-    public int getBMCLen() {
-        return Integer.parseInt(properties.getProperty("bmc_len"));
-    }
-
-    public String getPrefix() {
-        return properties.getProperty("prefix");
-    }
-
-    public String getSpecFileName() {
-        return properties.getProperty("spec-filename");
-    }
-
     public InstanceType getInstanceType() {
         return InstanceType.valueOf(properties.getProperty("instance-type"));
     }

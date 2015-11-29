@@ -78,7 +78,7 @@ public class EvolutionaryStrategyConfig<Instance extends Constructable<Instance>
 	public AdaptiveCriteria getAdaptiveCriteria() {
 		return AdaptiveCriteria.valueOf(properties.getProperty("adaptive-criteria"));
 	}
-	
+
 	public int lambda() {
 		return Integer.parseInt(properties.getProperty("lambda"));
 	}

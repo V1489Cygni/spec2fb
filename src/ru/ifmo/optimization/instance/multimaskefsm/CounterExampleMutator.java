@@ -9,14 +9,15 @@ import ru.ifmo.optimization.instance.multimaskefsm.task.ScenarioElement;
 import ru.ifmo.optimization.instance.multimaskefsm.task.VarsActionsScenario;
 import ru.ifmo.random.RandomProvider;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, MultiMaskEfsmMutation> {
-    private static final int LAMBDA = 1;
-    private double probability;
+    private final int lambda;
 
-    public CounterExampleMutator(double probability) {
-        this.probability = probability;
+    public CounterExampleMutator(int lambda) {
+        this.lambda = lambda;
     }
 
     @Override
@@ -25,7 +26,7 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
         if (transitions.isEmpty()) {
             return new MutatedInstanceMetaData<>(new MultiMaskEfsmSkeleton(individual), new MutationCollection<>());
         }
-        Map<Step, Integer> num = new HashMap<>();
+        MyMap num = new MyMap();
         for (Step s : transitions) {
             num.put(s, 1);
         }
@@ -57,12 +58,12 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
 
     @Override
     public double probability() {
-        return probability;
+        return 1;
     }
 
     @Override
     public void setProbability(double probability) {
-        this.probability = probability;
+
     }
 
     private List<Step> getTransitions(MultiMaskEfsmSkeleton individual) {
@@ -81,7 +82,7 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
         return transitions;
     }
 
-    private void getTrace(MultiMaskEfsmSkeleton individual, VarsActionsScenario scenario, Map<Step, Integer> num) {
+    private void getTrace(MultiMaskEfsmSkeleton individual, VarsActionsScenario scenario, MyMap num) {
         int state = individual.getInitialState();
         for (int i = 0; i < scenario.size(); i++) {
             ScenarioElement element = scenario.get(i);
@@ -114,18 +115,14 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
             }
             if (group != -1) {
                 Step s = new Step(state, eid, group, index);
-                if (num.containsKey(s)) {
-                    num.put(s, num.get(s) + LAMBDA);
-                } else {
-                    System.err.println("Warning: Unexpected step in trace.");
-                }
+                num.add(s, lambda);
                 state = res;
             }
         }
     }
 
     private static class Step {
-        private int state, event, group, index;
+        public int state, event, group, index;
 
         public Step(int state, int event, int group, int index) {
             this.state = state;
@@ -136,13 +133,75 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
 
         @Override
         public int hashCode() {
-            return state << 24 + event << 16 + group << 8 + index;
+            return state << 26 + event << 20 + group << 14 + index;
         }
 
         @Override
         public boolean equals(Object obj) {
             return obj instanceof Step && state == ((Step) obj).state && event == ((Step) obj).event
                     && group == ((Step) obj).group && index == ((Step) obj).index;
+        }
+    }
+
+    private static class MyMap {
+        private static final int size = 997;
+        private Node[] nodes = new Node[size];
+
+        public void put(Step s, int value) {
+            int h = (0x7F_FF_FF_FF & s.hashCode()) % size;
+            if (nodes[h] == null) {
+                nodes[h] = new Node(s, value);
+            } else {
+                Node n = nodes[h];
+                while (n.next != null) {
+                    n = n.next;
+                }
+                n.next = new Node(s, value);
+            }
+        }
+
+        public int get(Step s) {
+            Node n = nodes[(0x7F_FF_FF_FF & s.hashCode()) % size];
+            while (!s.equals(n.key)) {
+                n = n.next;
+            }
+            return n.value;
+        }
+
+        public void add(Step s, int value) {
+            Node n = nodes[(0x7F_FF_FF_FF & s.hashCode()) % size];
+            while (!s.equals(n.key)) {
+                n = n.next;
+            }
+            n.value += value;
+        }
+
+        public boolean containsKey(Step s) {
+            Node n = nodes[(0x7F_FF_FF_FF & s.hashCode()) % size];
+            while (n != null) {
+                if (n.key.equals(s)) {
+                    return true;
+                }
+                n = n.next;
+            }
+            return false;
+        }
+
+        public void clear() {
+            for (int i = 0; i < size; i++) {
+                nodes[i] = null;
+            }
+        }
+
+        private static class Node {
+            private Step key;
+            private int value;
+            private Node next;
+
+            public Node(Step key, int value) {
+                this.key = key;
+                this.value = value;
+            }
         }
     }
 }

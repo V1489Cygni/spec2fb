@@ -17,6 +17,7 @@ import ru.ifmo.optimization.algorithm.muaco.heuristicdist.DestinationFitnessHeur
 import ru.ifmo.optimization.algorithm.muaco.heuristicdist.FitnessDifferenceHeuristicDistance;
 import ru.ifmo.optimization.algorithm.muaco.heuristicdist.HeuristicDistance;
 import ru.ifmo.optimization.algorithm.muaco.heuristicdist.NoneHeuristicDistance;
+import ru.ifmo.optimization.algorithm.muaco.parallel.InteractingAlgorithm;
 import ru.ifmo.optimization.algorithm.muaco.pathselector.AbstractPathSelector;
 import ru.ifmo.optimization.algorithm.muaco.pathselector.AntColonySystemPathSelector;
 import ru.ifmo.optimization.algorithm.muaco.pathselector.HeuristicAntPathSelector;
@@ -200,7 +201,7 @@ public class MuACOConfig<Instance extends Constructable<Instance>, MutationType 
                     mutators.add(new ChangeMeaningfulPredicatesMutator(Double.parseDouble(properties.getProperty("CHANGE_PREDICATES.p", "-1"))));
                     break;
                 case FBDK_COUNTEREXAMPLE:
-                    mutators.add(new CounterExampleMutator(Double.parseDouble(properties.getProperty("FBDK_COUNTEREXAMPLE.p"))));
+                    mutators.add(new CounterExampleMutator(Integer.parseInt(properties.getProperty("FBDK_COUNTEREXAMPLE.lambda"))));
                     break;
             }
         }

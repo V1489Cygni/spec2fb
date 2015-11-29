@@ -289,8 +289,9 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
         }
 
         instance.clearCounterExamples();
-        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance)) / 2;
+        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance, f.fitness)) / 2;
         instance.getCounterExamples().addAll(labeledInstance.getSkeleton().getCounterExamples());
+        instance.setFitness(labeledInstance.getSkeleton().getFitness());
 
         if (f.fitness >= 1.0) {
             storeResult(labeledInstance);
@@ -328,7 +329,7 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
         }
 
         instance.getSkeleton().clearCounterExamples();
-        f.fitness = (f.fitness + TLFitness.getFitness(instance)) / 2;
+        f.fitness = (f.fitness + TLFitness.getFitness(instance, f.fitness)) / 2;
 
         if (f.fitness >= 1.0) {
             storeResult(instance);
@@ -345,7 +346,7 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
         RunData f = getF(labeledInstance, scenarios);
 
         labeledInstance.getSkeleton().clearCounterExamples();
-        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance)) / 2;
+        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance, f.fitness)) / 2;
 
         if (f.fitness >= 1.0) {
             storeResult(labeledInstance);
@@ -360,7 +361,7 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
         RunData f = getF(labeledInstance, s);
 
         labeledInstance.getSkeleton().clearCounterExamples();
-        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance)) / 2;
+        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance, f.fitness)) / 2;
 
         if (f.fitness >= 1.0) {
             storeResult(labeledInstance);

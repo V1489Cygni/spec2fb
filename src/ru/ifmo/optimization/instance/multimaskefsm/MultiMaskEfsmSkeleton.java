@@ -23,6 +23,7 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
     private final List<VarsActionsScenario> counterExamples = new ArrayList<>();
     private int initialState;
     private State[] states;
+    private double fitness;
 
     public MultiMaskEfsmSkeleton() {
         states = new State[STATE_COUNT];
@@ -36,6 +37,7 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
         states = new State[STATE_COUNT];
         this.initialState = other.initialState;
         counterExamples.addAll(other.counterExamples);
+        fitness = other.fitness;
         for (int i = 0; i < states.length; i++) {
             states[i] = new State(other.states[i]);
         }
@@ -57,6 +59,14 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
             }
         }
         return formula.toString();
+    }
+
+    public double getFitness() {
+        return fitness;
+    }
+
+    public void setFitness(double fitness) {
+        this.fitness = fitness;
     }
 
     public List<VarsActionsScenario> getCounterExamples() {

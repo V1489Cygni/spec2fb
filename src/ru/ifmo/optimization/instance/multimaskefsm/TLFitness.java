@@ -2,6 +2,7 @@ package ru.ifmo.optimization.instance.multimaskefsm;
 
 import ru.ifmo.optimization.instance.multimaskefsm.task.ScenarioElement;
 import ru.ifmo.optimization.instance.multimaskefsm.task.VarsActionsScenario;
+import ru.ifmo.random.RandomProvider;
 
 import java.io.*;
 import java.util.*;
@@ -19,6 +20,7 @@ public class TLFitness {
     private static double averageSatisfiedSpecifications;
     private static long time, number;
     private static int bmcLen;
+    private static double threshold, probability;
 
     private static void initOE() throws FileNotFoundException {
         Scanner sc = new Scanner(new File("oe.txt"));
@@ -63,7 +65,7 @@ public class TLFitness {
         }
     }
 
-    public static void init(String specFileName, String prefix1, int bmc) throws FileNotFoundException {
+    public static void init(String specFileName, String prefix1, int bmc, double threshold1, double probability1) throws FileNotFoundException {
         synchronized (TLFitness.class) {
             if (!initialized) {
                 initOE();
@@ -73,13 +75,18 @@ public class TLFitness {
                 initSpec(specFileName);
                 prefix = prefix1;
                 bmcLen = bmc;
+                threshold = threshold1;
+                probability = probability1;
                 initialized = true;
-                System.out.println("TLFitness initialized with bmc=" + bmcLen);
+                System.out.println("TLFitness initialized with bmc=" + bmcLen + ", threshold=" + threshold + ", probability=" + probability);
             }
         }
     }
 
-    public static double getFitness(MultiMaskEfsm instance) {
+    public static double getFitness(MultiMaskEfsm instance, double fitness) {
+        if (fitness < threshold && RandomProvider.getInstance().nextDouble() > probability) {
+            return instance.getSkeleton().getFitness();
+        }
         instance.getSkeleton().clearCounterExamples();
         String s = getSMV(instance);
         synchronized (TLFitness.class) {
@@ -95,6 +102,7 @@ public class TLFitness {
             time += System.currentTimeMillis();
             number++;
         }
+        instance.getSkeleton().setFitness(d);
         return d;
     }
 
@@ -130,10 +138,10 @@ public class TLFitness {
                 }
             }
             if (num != specNum) {
-                Writer writer1 = new FileWriter(new File("error_case.smv"));
+                Writer writer1 = new FileWriter(new File(p + "error_case.smv"));
                 writer1.write(s);
                 writer1.close();
-                System.err.println("Unexpected number of specifications (see \"error_case.smv\").");
+                System.err.println("Unexpected number of specifications (see \"" + prefix + "error_case.smv\").");
                 throw new AssertionError();
             }
             synchronized (TLFitness.class) {
@@ -180,10 +188,10 @@ public class TLFitness {
                 }
             }
             if (num != specNum) {
-                Writer writer1 = new FileWriter(new File("error_case.smv"));
+                Writer writer1 = new FileWriter(new File(prefix + "error_case.smv"));
                 writer1.write(s);
                 writer1.close();
-                System.err.println("Unexpected number of specifications (see \"error_case.smv\").");
+                System.err.println("Unexpected number of specifications (see \"" + prefix + "error_case.smv\").");
                 throw new AssertionError();
             }
             synchronized (TLFitness.class) {
@@ -262,7 +270,7 @@ public class TLFitness {
             ie.put(MultiMaskEfsmSkeleton.INPUT_EVENTS.get(s), s);
         }
         MultiMaskEfsmSkeleton skeleton = instance.getSkeleton();
-        List<List<String>> transitions = new ArrayList<>();
+        List<List<StringBuilder>> transitions = new ArrayList<>();
         List<String> algorithms = new ArrayList<>();
         for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
             transitions.add(new ArrayList<>());
@@ -277,10 +285,10 @@ public class TLFitness {
                         for (int j = 0; j < tg.getTransitionsCount(); j++) {
                             int ns = tg.getNewState(j);
                             if (ns != -1) {
-                                String s = "_state = state" + i + " & " + ie.get(e);
+                                StringBuilder s = new StringBuilder("_state = state" + i + " & " + ie.get(e));
                                 for (int k = 0; k < m.size(); k++) {
                                     boolean tr = ((j >> (m.size() - 1 - k)) & 1) == 1;
-                                    s += " & " + (tr ? "" : "!") + MultiMaskEfsmSkeleton.PREDICATE_NAMES.get(m.get(k));
+                                    s.append(" & ").append(tr ? "" : "!").append(MultiMaskEfsmSkeleton.PREDICATE_NAMES.get(m.get(k)));
                                 }
                                 transitions.get(ns).add(s);
                             }
@@ -291,63 +299,63 @@ public class TLFitness {
             OutputAction action = instance.getActions(i);
             algorithms.add(action.getAlgorithm());
         }
-        String s = "MODULE main()\n\nVAR _state : {";
+        StringBuilder s = new StringBuilder("MODULE main()\n\nVAR _state : {");
         for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
-            s += "state" + i + (i == MultiMaskEfsmSkeleton.STATE_COUNT - 1 ? "" : ", ");
+            s.append("state").append(i).append(i == MultiMaskEfsmSkeleton.STATE_COUNT - 1 ? "" : ", ");
         }
-        s += "};\n";
+        s.append("};\n");
         for (String ies : MultiMaskEfsmSkeleton.INPUT_EVENTS.keySet()) {
-            s += "VAR " + ies + " : boolean;\n";
+            s.append("VAR ").append(ies).append(" : boolean;\n");
         }
         for (String pn : MultiMaskEfsmSkeleton.PREDICATE_NAMES) {
-            s += "VAR " + pn + " : boolean;\n";
+            s.append("VAR ").append(pn).append(" : boolean;\n");
         }
         for (String oe : outputEvents) {
-            s += "VAR " + oe + " : boolean;\n";
+            s.append("VAR ").append(oe).append(" : boolean;\n");
         }
         assert names.size() == algorithms.get(0).length();
         for (String n : names) {
-            s += "VAR " + n + " : boolean;\n";
+            s.append("VAR ").append(n).append(" : boolean;\n");
         }
-        s += vars + "\nASSIGN\n\ninit(_state) := state" + instance.getInitialState() + ";\n\nnext(_state) := case\n";
+        s.append(vars).append("\nASSIGN\n\ninit(_state) := state").append(instance.getInitialState()).append(";\n\nnext(_state) := case\n");
         for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
-            s += "    ";
+            s.append("    ");
             for (int j = 0; j < transitions.get(i).size(); j++) {
-                s += transitions.get(i).get(j) + (j == transitions.get(i).size() - 1 ? " : state" + i + ";\n" : " | ");
+                s.append(transitions.get(i).get(j)).append(j == transitions.get(i).size() - 1 ? " : state" + i + ";\n" : " | ");
             }
         }
-        s += "    TRUE : _state;\nesac;\n\n";
+        s.append("    TRUE : _state;\nesac;\n\n");
         for (String ss : outputEvents) {
             if (!ss.isEmpty()) {
-                s += ss + " := FALSE";
+                s.append(ss).append(" := FALSE");
                 for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
                     if (instance.getActions(i).getOutputEvent().equals(ss)) {
-                        s += " | _state = state" + i;
+                        s.append(" | _state = state").append(i);
                     }
                 }
-                s += ";\n\n";
+                s.append(";\n\n");
             }
         }
         for (int i = 0; i < names.size(); i++) {
             char c = instance.getActions(instance.getInitialState()).getAlgorithm().charAt(i);
-            s += "init(" + names.get(i) + ") := " + (c == '1' ? "TRUE" : "FALSE") + ";\n\n";
-            s += "next(" + names.get(i) + ") := case\n    FALSE";
+            s.append("init(").append(names.get(i)).append(") := ").append(c == '1' ? "TRUE" : "FALSE").append(";\n\n");
+            s.append("next(").append(names.get(i)).append(") := case\n    FALSE");
             for (int j = 0; j < MultiMaskEfsmSkeleton.STATE_COUNT; j++) {
                 if (instance.getActions(j).getAlgorithm().charAt(i) == '1') {
-                    s += " | next(_state) = state" + j;
+                    s.append(" | next(_state) = state").append(j);
                 }
             }
-            s += " : TRUE;\n    FALSE";
+            s.append(" : TRUE;\n    FALSE");
             for (int j = 0; j < MultiMaskEfsmSkeleton.STATE_COUNT; j++) {
                 if (instance.getActions(j).getAlgorithm().charAt(i) == '0') {
-                    s += " | next(_state) = state" + j;
+                    s.append(" | next(_state) = state").append(j);
                 }
             }
-            s += " : FALSE;\n    TRUE : " + names.get(i) + ";\nesac;\n\n";
+            s.append(" : FALSE;\n    TRUE : ").append(names.get(i)).append(";\nesac;\n\n");
         }
-        s += assignments + "\n";
-        s += spec;
-        return s;
+        s.append(assignments).append("\n");
+        s.append(spec);
+        return s.toString();
     }
 
     public static void printStats() {
