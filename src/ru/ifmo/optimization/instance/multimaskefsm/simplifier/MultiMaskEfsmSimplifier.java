@@ -151,7 +151,6 @@ public class MultiMaskEfsmSimplifier implements Runnable {
         } else {
             result = (MultiMaskMetaData) task.getInstanceMetaData(new MultiMaskEfsm(simplified, actions));
         }
-        System.out.println(TLFitness.getFitness(result.getEfsm(), 1));
         result.print("fbdk");
     }
 }

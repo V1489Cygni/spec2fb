@@ -1,9 +1,7 @@
 package ru.ifmo.optimization.instance.multimaskefsm.task;
 
 import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskEfsm;
-import ru.ifmo.optimization.instance.multimaskefsm.TLFitness;
 import ru.ifmo.optimization.instance.task.AbstractTaskConfig;
-import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
 import ru.ifmo.optimization.runner.config.OptimizationRunnerConfig;
 
 import java.io.File;
@@ -18,11 +16,10 @@ public class EccToSmv {
             System.exit(1);
         }
         OptimizationRunnerConfig config = new OptimizationRunnerConfig("experiment.properties");
-        AbstractTaskFactory factory = config.getTaskFactory();
-        factory.createTask();
-        TLFitness.init(new AbstractTaskConfig(config.getTaskConfigFileName()).getProperty("spec-filename"), null, 0, 0, 1);
+        config.getTaskFactory();
+        MultiMaskTaskWithTL t = new MultiMaskTaskWithTL(new AbstractTaskConfig(config.getTaskConfigFileName()));
         MultiMaskEfsm efsm = new MultiMaskEfsm(args[0]);
-        String s = TLFitness.getSMV(efsm);
+        String s = t.getSMV(efsm);
         Writer writer = new FileWriter(new File(args[1]));
         writer.write(s);
         writer.close();

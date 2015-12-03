@@ -19,7 +19,7 @@ import ru.ifmo.optimization.instance.InstanceGenerator;
 import ru.ifmo.optimization.instance.InstanceMetaData;
 import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.task.testsmodelchecking.TestsModelCheckingTask;
-import ru.ifmo.optimization.instance.multimaskefsm.TLFitness;
+import ru.ifmo.optimization.instance.multimaskefsm.task.MultiMaskTaskWithTL;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
@@ -337,7 +337,9 @@ public class MuACO<Instance extends Constructable<Instance>,
                     + "; meanFitness = " + meanFitness
                     + "; best = " + stats.getBestFitness());
         }
-        TLFitness.printStats();
+        if (task instanceof MultiMaskTaskWithTL) {
+            ((MultiMaskTaskWithTL) task).printStats();
+        }
     }
 
     private Collection<Node<Instance>> getBestSolutions(int maxNumberOfSolutions) {

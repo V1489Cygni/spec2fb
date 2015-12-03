@@ -14,14 +14,14 @@ import java.util.*;
 import java.util.Map.Entry;
 
 public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleton> {
-    private VarsActionsScenario[] scenarios;
-    private VarsActionsScenario[] mediumScenarios;
-    private VarsActionsScenario[] shortScenarios;
-    private double startPreciseFitnessCalculation;
-    private double startMediumPreciseFitnessCalculation;
-    private int shorteningScale;
-    private int mediumShorteningScale;
-    private int outputVariablesCount;
+    protected VarsActionsScenario[] scenarios;
+    protected VarsActionsScenario[] mediumScenarios;
+    protected VarsActionsScenario[] shortScenarios;
+    protected double startPreciseFitnessCalculation;
+    protected double startMediumPreciseFitnessCalculation;
+    protected int shorteningScale;
+    protected int mediumShorteningScale;
+    protected int outputVariablesCount;
 
     public MultiMaskTask(AbstractTaskConfig config) {
         desiredFitness = config.getDesiredFitness();
@@ -42,7 +42,7 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
         outputVariablesCount = scenarios[0].get(scenarios[0].size() - 1).getActions().length();
     }
 
-    private VarsActionsScenario[] preprocessScenarios(int scale) {
+    protected VarsActionsScenario[] preprocessScenarios(int scale) {
         VarsActionsScenario[] result = new VarsActionsScenario[scenarios.length];
 
         for (int i = 0; i < scenarios.length; i++) {
@@ -81,7 +81,7 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
         return result;
     }
 
-    private OutputAction getBestMask(List<Pair<OutputAction, OutputAction>> pairs) {
+    protected OutputAction getBestMask(List<Pair<OutputAction, OutputAction>> pairs) {
         if (pairs.isEmpty()) {
             return null;
         }
@@ -181,7 +181,7 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
         return labeled;
     }
 
-    private RawRunData getRawRunData(MultiMaskEfsm instance, VarsActionsScenario scenario) {
+    protected RawRunData getRawRunData(MultiMaskEfsm instance, VarsActionsScenario scenario) {
         int currentState = instance.getInitialState();
         List<String> outputs = new ArrayList<String>();
         int numberOfStateChanges = 0;
@@ -210,7 +210,7 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
         return new RawRunData(outputs.toArray(new String[0]), numberOfStateChanges, firstErrorPosition);
     }
 
-    private String getTrace(MultiMaskEfsm instance, VarsActionsScenario scenario) {
+    protected String getTrace(MultiMaskEfsm instance, VarsActionsScenario scenario) {
         int currentState = instance.getInitialState();
         StringBuilder result = new StringBuilder();
 
@@ -241,7 +241,7 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
                 rawRunData.firstErrorPosition == -1 ? 1.0 : (double) rawRunData.firstErrorPosition / (double) (scenario.size() - 1));
     }
 
-    private String applyMask(String currentActions, String mask) {
+    protected String applyMask(String currentActions, String mask) {
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < currentActions.length(); i++) {
             result.append(mask.charAt(i) == 'x' ? currentActions.charAt(i) : mask.charAt(i));
@@ -249,7 +249,7 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
         return result.toString();
     }
 
-    private RunData getF(MultiMaskEfsm labeledInstance, VarsActionsScenario[] s) {
+    protected RunData getF(MultiMaskEfsm labeledInstance, VarsActionsScenario[] s) {
         labeledInstance.markTransitionsUnused();
 
         double f = 0;
@@ -288,13 +288,7 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
             }
         }
 
-        instance.clearCounterExamples();
-        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance, f.fitness)) / 2;
-        instance.getCounterExamples().addAll(labeledInstance.getSkeleton().getCounterExamples());
-        instance.setFitness(labeledInstance.getSkeleton().getFitness());
-
         if (f.fitness >= 1.0) {
-            storeResult(labeledInstance);
             f.fitness = 1.1;
             return new FitInstance<MultiMaskEfsmSkeleton>(instance, f.fitness);
         }
@@ -328,11 +322,7 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
             }
         }
 
-        instance.getSkeleton().clearCounterExamples();
-        f.fitness = (f.fitness + TLFitness.getFitness(instance, f.fitness)) / 2;
-
         if (f.fitness >= 1.0) {
-            storeResult(instance);
             f.fitness = 1.1;
             return new FitInstance<MultiMaskEfsmSkeleton>(instance.getSkeleton(), f.fitness);
         }
@@ -345,11 +335,7 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
     public double getFitness(MultiMaskEfsm labeledInstance) {
         RunData f = getF(labeledInstance, scenarios);
 
-        labeledInstance.getSkeleton().clearCounterExamples();
-        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance, f.fitness)) / 2;
-
         if (f.fitness >= 1.0) {
-            storeResult(labeledInstance);
             f.fitness = 1.1;
             return 1.1;
         }
@@ -360,34 +346,12 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
     public double getFitness(MultiMaskEfsm labeledInstance, VarsActionsScenario[] s) {
         RunData f = getF(labeledInstance, s);
 
-        labeledInstance.getSkeleton().clearCounterExamples();
-        f.fitness = (f.fitness + TLFitness.getFitness(labeledInstance, f.fitness)) / 2;
-
         if (f.fitness >= 1.0) {
-            storeResult(labeledInstance);
             f.fitness = 1.1;
             return 1.1;
         }
 
         return f.fitness;
-    }
-
-    private void storeResult(MultiMaskEfsm ind) {
-        try {
-            String p = TLFitness.prefix;
-            Writer writer = new FileWriter(new File(p + "result.gv"));
-            writer.write(ind.toGraphvizString());
-            writer.close();
-            writer = new FileWriter(new File(p + "result.smv"));
-            writer.write(TLFitness.getSMV(ind));
-            writer.close();
-            FileOutputStream fos = new FileOutputStream(p + "result.data");
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            oos.writeObject(ind);
-            oos.close();
-        } catch (IOException e) {
-            System.err.println("Error while storing result: " + e.getMessage());
-        }
     }
 
     @Override
@@ -418,9 +382,9 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
     }
 
     public class RunData {
-        private double fitness;
-        private double numberOfStateChanges;
-        private double firstErrorPosition;
+        protected double fitness;
+        protected double numberOfStateChanges;
+        protected double firstErrorPosition;
 
         public RunData(double fitness, double numberOfStateChanges, double firstErrorPosition) {
             this.fitness = fitness;
@@ -433,10 +397,10 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
         }
     }
 
-    private class RawRunData {
-        private String[] outputs;
-        private double numberOfStateChanges;
-        private double firstErrorPosition;
+    protected class RawRunData {
+        protected String[] outputs;
+        protected double numberOfStateChanges;
+        protected double firstErrorPosition;
 
         public RawRunData(String[] outputs, double numberOfStateChanges, double firstErrorPosition) {
             this.outputs = outputs;
@@ -445,11 +409,11 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
         }
     }
 
-    private class TraceElement {
-        private String inputEvent;
-        private String inputVariables;
-        private String outputEvent;
-        private String outputVariables;
+    protected class TraceElement {
+        protected String inputEvent;
+        protected String inputVariables;
+        protected String outputEvent;
+        protected String outputVariables;
 
         public TraceElement(String inputEvent, String inputVariables, String outputEvent, String outputVariables) {
             this.inputEvent = inputEvent;

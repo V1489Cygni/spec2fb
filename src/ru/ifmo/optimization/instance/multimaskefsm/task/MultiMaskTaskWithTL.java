@@ -1,112 +1,164 @@
-package ru.ifmo.optimization.instance.multimaskefsm;
+package ru.ifmo.optimization.instance.multimaskefsm.task;
 
-import ru.ifmo.optimization.instance.multimaskefsm.task.ScenarioElement;
-import ru.ifmo.optimization.instance.multimaskefsm.task.VarsActionsScenario;
+import ru.ifmo.optimization.instance.FitInstance;
+import ru.ifmo.optimization.instance.multimaskefsm.*;
+import ru.ifmo.optimization.instance.task.AbstractTaskConfig;
 import ru.ifmo.random.RandomProvider;
 
 import java.io.*;
 import java.util.*;
 
-public class TLFitness {
-    public static String prefix;
-    private static boolean initialized;
-    private static int specNum;
-    private static List<String> names;
-    private static String vars;
-    private static String assignments;
-    private static String spec = "";
-    private static List<String> outputEvents;
-    private static int fitnessEvaluations, maxSatisfiedSpecifications;
-    private static double averageSatisfiedSpecifications;
-    private static long time, number;
-    private static int bmcLen;
-    private static double threshold, probability;
+public class MultiMaskTaskWithTL extends MultiMaskTask {
+    public String prefix;
+    private int specNum;
+    private List<String> names;
+    private String vars;
+    private String assignments;
+    private String spec = "";
+    private List<String> outputEvents;
+    private int fitnessEvaluations, maxSatisfiedSpecifications;
+    private double averageSatisfiedSpecifications;
+    private long time, number;
+    private int bmcLen;
+    private double threshold, probability, scenariosWeight, tlWeight;
 
-    private static void initOE() throws FileNotFoundException {
-        Scanner sc = new Scanner(new File("oe.txt"));
-        outputEvents = new ArrayList<>();
-        while (sc.hasNext()) {
-            outputEvents.add(sc.next());
+    public MultiMaskTaskWithTL(AbstractTaskConfig config) {
+        super(config);
+        try {
+            initOE();
+            initNames();
+            initVars();
+            initAssignments();
+            initSpec(config.getProperty("spec-filename"));
+            prefix = config.getProperty("prefix");
+            bmcLen = Integer.parseInt(config.getProperty("bmc-len"));
+            threshold = Double.parseDouble(config.getProperty("tl-eval-threshold"));
+            probability = Double.parseDouble(config.getProperty("tl-eval-probability"));
+            scenariosWeight = Double.parseDouble(config.getProperty("scenarios-weight"));
+            tlWeight = 1 - scenariosWeight;
+            System.out.println("TLFitness initialized with bmc=" + bmcLen + ", threshold=" + threshold +
+                    ", probability=" + probability + ", s-weight=" + scenariosWeight);
+        } catch (IOException e) {
+            System.err.println("Error while initializing MultiMaskTaskWithTL: " + e.getMessage());
+            System.exit(1);
         }
     }
 
-    private static void initNames() throws FileNotFoundException {
-        Scanner sc = new Scanner(new File("names.txt"));
-        names = new ArrayList<>();
-        while (sc.hasNext()) {
-            names.add(sc.next());
-        }
-    }
+    @Override
+    public FitInstance<MultiMaskEfsmSkeleton> getFitInstance(MultiMaskEfsmSkeleton instance) {
+        //first, try with short scenarios
+        MultiMaskEfsm labeledInstance = label(instance, shortScenarios);
+        RunData f = getF(labeledInstance, shortScenarios);
 
-    private static void initVars() throws FileNotFoundException {
-        Scanner sc = new Scanner(new File("vars.txt"));
-        vars = "";
-        while (sc.hasNext()) {
-            vars += sc.nextLine() + "\n";
-        }
-    }
+        //if the fitness value is large enough, try with medium scenarios
+        if (f.fitness > startMediumPreciseFitnessCalculation) {
+            labeledInstance = label(instance, mediumScenarios);
+            f = getF(labeledInstance, mediumScenarios);
 
-    private static void initAssignments() throws FileNotFoundException {
-        Scanner sc = new Scanner(new File("assignments.txt"));
-        assignments = "";
-        while (sc.hasNext()) {
-            assignments += sc.nextLine() + "\n";
-        }
-    }
-
-    private static void initSpec(String specFileName) throws FileNotFoundException {
-        if (specFileName != null) {
-            Scanner sc = new Scanner(new File(specFileName));
-            specNum = sc.nextInt();
-            spec = "";
-            while (sc.hasNext()) {
-                spec += sc.nextLine() + "\n";
+            //if the fitness value is large enough, try with full scenarios
+            if (f.fitness > startPreciseFitnessCalculation) {
+                labeledInstance = label(instance, scenarios);
+                f = getF(labeledInstance, scenarios);
             }
         }
+
+        instance.clearCounterExamples();
+        f.fitness = scenariosWeight * f.fitness + tlWeight * getTLFitness(labeledInstance, f.fitness);
+        instance.getCounterExamples().addAll(labeledInstance.getSkeleton().getCounterExamples());
+        instance.setFitness(labeledInstance.getSkeleton().getFitness());
+
+        if (f.fitness >= 1.0) {
+            storeResult(labeledInstance);
+            f.fitness = 1.1;
+            return new FitInstance<>(instance, f.fitness);
+        }
+
+        f.fitness += 0.0001 * f.numberOfStateChanges;
+
+        return new FitInstance<>(instance, f.fitness);
     }
 
-    public static void init(String specFileName, String prefix1, int bmc, double threshold1, double probability1) throws FileNotFoundException {
-        synchronized (TLFitness.class) {
-            if (!initialized) {
-                initOE();
-                initNames();
-                initVars();
-                initAssignments();
-                initSpec(specFileName);
-                prefix = prefix1;
-                bmcLen = bmc;
-                threshold = threshold1;
-                probability = probability1;
-                initialized = true;
-                System.out.println("TLFitness initialized with bmc=" + bmcLen + ", threshold=" + threshold + ", probability=" + probability);
+    @Override
+    public FitInstance<MultiMaskEfsmSkeleton> getFitInstance(MultiMaskEfsm instance) {
+//		RunData f = getF(instance, scenarios);
+
+        //first, try with short scenarios
+        RunData f = getF(instance, shortScenarios);
+
+        //if the fitness value is large enough, try with medium scenarios
+        if (f.fitness > startMediumPreciseFitnessCalculation) {
+            f = getF(instance, mediumScenarios);
+
+            //if the fitness value is large enough, try with full scenarios
+            if (f.fitness > startPreciseFitnessCalculation) {
+                f = getF(instance, scenarios);
             }
         }
-    }
 
-    public static double getFitness(MultiMaskEfsm instance, double fitness) {
-        if (fitness < threshold && RandomProvider.getInstance().nextDouble() > probability) {
-            return instance.getSkeleton().getFitness();
-        }
         instance.getSkeleton().clearCounterExamples();
-        String s = getSMV(instance);
-        synchronized (TLFitness.class) {
-            time -= System.currentTimeMillis();
+        f.fitness = scenariosWeight * f.fitness + tlWeight * getTLFitness(instance, f.fitness);
+
+        if (f.fitness >= 1.0) {
+            storeResult(instance);
+            f.fitness = 1.1;
+            return new FitInstance<>(instance.getSkeleton(), f.fitness);
         }
-        double d;
-        if (bmcLen == 0) {
-            d = interact(instance, s);
-        } else {
-            d = interact(instance, s, bmcLen);
-        }
-        synchronized (TLFitness.class) {
-            time += System.currentTimeMillis();
-            number++;
-        }
-        instance.getSkeleton().setFitness(d);
-        return d;
+
+        f.fitness += 0.0001 * f.numberOfStateChanges;
+
+        return new FitInstance<>(instance.getSkeleton(), f.fitness);
     }
 
-    private static double interact(MultiMaskEfsm instance, String s) {
+    @Override
+    public double getFitness(MultiMaskEfsm labeledInstance) {
+        RunData f = getF(labeledInstance, scenarios);
+
+        labeledInstance.getSkeleton().clearCounterExamples();
+        f.fitness = scenariosWeight * f.fitness + tlWeight * getTLFitness(labeledInstance, f.fitness);
+
+        if (f.fitness >= 1.0) {
+            storeResult(labeledInstance);
+            f.fitness = 1.1;
+            return 1.1;
+        }
+
+        return f.fitness;
+    }
+
+    @Override
+    public double getFitness(MultiMaskEfsm labeledInstance, VarsActionsScenario[] s) {
+        RunData f = getF(labeledInstance, s);
+
+        labeledInstance.getSkeleton().clearCounterExamples();
+        f.fitness = scenariosWeight * f.fitness + tlWeight * getTLFitness(labeledInstance, f.fitness);
+
+        if (f.fitness >= 1.0) {
+            storeResult(labeledInstance);
+            f.fitness = 1.1;
+            return 1.1;
+        }
+
+        return f.fitness;
+    }
+
+    private void storeResult(MultiMaskEfsm ind) {
+        try {
+            Writer writer = new FileWriter(new File(prefix + "result.gv"));
+            writer.write(ind.toGraphvizString());
+            writer.close();
+            writer = new FileWriter(new File(prefix + "result.smv"));
+            writer.write(getSMV(ind));
+            writer.close();
+            FileOutputStream fos = new FileOutputStream(prefix + "result.data");
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+            oos.writeObject(ind);
+            oos.close();
+        } catch (IOException e) {
+            System.err.println("Error while storing result: " + e.getMessage());
+        }
+    }
+
+    public double interact(MultiMaskEfsm instance, String s) {
         try {
             Process p = Runtime.getRuntime().exec("NuSMV-2.5.4-x86_64-unknown-linux-gnu/bin/NuSMV");
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
@@ -138,13 +190,13 @@ public class TLFitness {
                 }
             }
             if (num != specNum) {
-                Writer writer1 = new FileWriter(new File(p + "error_case.smv"));
+                Writer writer1 = new FileWriter(new File(prefix + "error_case.smv"));
                 writer1.write(s);
                 writer1.close();
                 System.err.println("Unexpected number of specifications (see \"" + prefix + "error_case.smv\").");
                 throw new AssertionError();
             }
-            synchronized (TLFitness.class) {
+            synchronized (this) {
                 maxSatisfiedSpecifications = Math.max(maxSatisfiedSpecifications, t);
                 averageSatisfiedSpecifications += t;
                 fitnessEvaluations++;
@@ -156,7 +208,7 @@ public class TLFitness {
         }
     }
 
-    private static double interact(MultiMaskEfsm instance, String s, int length) {
+    public double interact(MultiMaskEfsm instance, String s, int length) {
         try {
             Process p = Runtime.getRuntime().exec("NuSMV-2.5.4-x86_64-unknown-linux-gnu/bin/NuSMV -bmc -bmc_length " + length);
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
@@ -194,7 +246,7 @@ public class TLFitness {
                 System.err.println("Unexpected number of specifications (see \"" + prefix + "error_case.smv\").");
                 throw new AssertionError();
             }
-            synchronized (TLFitness.class) {
+            synchronized (this) {
                 maxSatisfiedSpecifications = Math.max(maxSatisfiedSpecifications, t);
                 averageSatisfiedSpecifications += t;
                 fitnessEvaluations++;
@@ -206,7 +258,7 @@ public class TLFitness {
         }
     }
 
-    private static String readCounterexample(MultiMaskEfsm instance, Scanner sc) {
+    private String readCounterexample(MultiMaskEfsm instance, Scanner sc) {
         String nl, last = null;
         String ie = "";
         String oe = "";
@@ -264,7 +316,7 @@ public class TLFitness {
         return last;
     }
 
-    public static String getSMV(MultiMaskEfsm instance) {
+    public String getSMV(MultiMaskEfsm instance) {
         Map<Integer, String> ie = new HashMap<>();
         for (String s : MultiMaskEfsmSkeleton.INPUT_EVENTS.keySet()) {
             ie.put(MultiMaskEfsmSkeleton.INPUT_EVENTS.get(s), s);
@@ -358,8 +410,8 @@ public class TLFitness {
         return s.toString();
     }
 
-    public static void printStats() {
-        synchronized (TLFitness.class) {
+    public void printStats() {
+        synchronized (this) {
             System.out.println("TLFitness: satisfied_specifications: {max: " + maxSatisfiedSpecifications +
                     ", average: " + (averageSatisfiedSpecifications / fitnessEvaluations) + "}");
             averageSatisfiedSpecifications = 0;
@@ -367,5 +419,71 @@ public class TLFitness {
             fitnessEvaluations = 0;
             System.out.println("Time: " + time + ", num: " + number + ", avg: " + time / number);
         }
+    }
+
+    private void initOE() throws FileNotFoundException {
+        Scanner sc = new Scanner(new File("oe.txt"));
+        outputEvents = new ArrayList<>();
+        while (sc.hasNext()) {
+            outputEvents.add(sc.next());
+        }
+    }
+
+    private void initNames() throws FileNotFoundException {
+        Scanner sc = new Scanner(new File("names.txt"));
+        names = new ArrayList<>();
+        while (sc.hasNext()) {
+            names.add(sc.next());
+        }
+    }
+
+    private void initVars() throws FileNotFoundException {
+        Scanner sc = new Scanner(new File("vars.txt"));
+        vars = "";
+        while (sc.hasNext()) {
+            vars += sc.nextLine() + "\n";
+        }
+    }
+
+    private void initAssignments() throws FileNotFoundException {
+        Scanner sc = new Scanner(new File("assignments.txt"));
+        assignments = "";
+        while (sc.hasNext()) {
+            assignments += sc.nextLine() + "\n";
+        }
+    }
+
+    private void initSpec(String specFileName) throws FileNotFoundException {
+        if (specFileName != null) {
+            Scanner sc = new Scanner(new File(specFileName));
+            specNum = sc.nextInt();
+            spec = "";
+            while (sc.hasNext()) {
+                spec += sc.nextLine() + "\n";
+            }
+        }
+    }
+
+    public double getTLFitness(MultiMaskEfsm instance, double fitness) {
+        if (fitness < threshold && RandomProvider.getInstance().nextDouble() > probability) {
+            return instance.getSkeleton().getFitness();
+        }
+        instance.getSkeleton().clearCounterExamples();
+        String s = getSMV(instance);
+        synchronized (this) {
+            time -= System.currentTimeMillis();
+        }
+        double d;
+        if (bmcLen == 0) {
+            d = interact(instance, s);
+        } else {
+            d = interact(instance, s, bmcLen);
+        }
+        synchronized (this) {
+            time += System.currentTimeMillis();
+            number++;
+        }
+        instance.getSkeleton().setFitness(d);
+        return d;
     }
 }
