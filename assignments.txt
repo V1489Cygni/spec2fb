@@ -42,7 +42,7 @@ next(vcEnd) := case
 	TRUE : vcEnd;
 esac;
 
-init(vs) := TRUE;
+init(vs) := FALSE;
 next(vs) := case
 	next(CNF) & next(vacuum_on) : TRUE;
 	next(CNF) & next(vacuum_off) : FALSE;
