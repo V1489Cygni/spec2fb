@@ -1,18 +1,19 @@
 REQ := TRUE;
 
-init(c1Home) := TRUE;
-next(c1Home) := case
-	next(CNF) & next(c1Extend) : FALSE;
-	next(CNF) & next(c1Retract) : TRUE;
-	TRUE : c1Home;
+init(st1) := s1;
+next(st1) := case
+    next(CNF & c1Extend) & st1 = s1 : s2;
+    next(c1Extend) & st1 = s2 : s4;
+    next(c1Extend) & st1 = s3 : s4;
+    next(c1Retract) & st1 = s2 : s1;
+    next(c1Retract) & st1 = s3 : s1;
+    next(CNF & c1Retract) & st1 = s4 : s3;
+    TRUE : st1;
 esac;
 
-init(c1End) := FALSE;
-next(c1End) := case
-	next(CNF) & next(c1Extend) : TRUE;
-	next(CNF) & next(c1Retract) : FALSE;
-	TRUE : c1End;
-esac;
+c1Home := st1 = s1 | st1 = s2;
+
+c1End := st1 = s3 | st1 = s4;
 
 init(c2Home) := TRUE;
 next(c2Home) := case

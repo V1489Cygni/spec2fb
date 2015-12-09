@@ -317,43 +317,27 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
     }
 
     public String getSMV(MultiMaskEfsm instance) {
+        assert names.size() == instance.getActions(0).getAlgorithm().length();
         Map<Integer, String> ie = new HashMap<>();
         for (String s : MultiMaskEfsmSkeleton.INPUT_EVENTS.keySet()) {
             ie.put(MultiMaskEfsmSkeleton.INPUT_EVENTS.get(s), s);
         }
         MultiMaskEfsmSkeleton skeleton = instance.getSkeleton();
-        List<List<StringBuilder>> transitions = new ArrayList<>();
-        List<String> algorithms = new ArrayList<>();
+        List<String> sNames = new ArrayList<>();
+        Map<String, Integer> count = new HashMap<>();
         for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
-            transitions.add(new ArrayList<>());
-        }
-        for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
-            State state = skeleton.getState(i);
-            for (int e = 0; e < MultiMaskEfsmSkeleton.INPUT_EVENT_COUNT; e++) {
-                for (int t = 0; t < state.getTransitionGroupCount(e); t++) {
-                    TransitionGroup tg = state.getTransitionGroup(e, t);
-                    if (tg != null) {
-                        List<Integer> m = tg.getMeaningfulPredicateIds();
-                        for (int j = 0; j < tg.getTransitionsCount(); j++) {
-                            int ns = tg.getNewState(j);
-                            if (ns != -1) {
-                                StringBuilder s = new StringBuilder("_state = state" + i + " & " + ie.get(e));
-                                for (int k = 0; k < m.size(); k++) {
-                                    boolean tr = ((j >> (m.size() - 1 - k)) & 1) == 1;
-                                    s.append(" & ").append(tr ? "" : "!").append(MultiMaskEfsmSkeleton.PREDICATE_NAMES.get(m.get(k)));
-                                }
-                                transitions.get(ns).add(s);
-                            }
-                        }
-                    }
-                }
+            String s = instance.getActions()[i].getAlgorithm();
+            if (count.containsKey(s)) {
+                count.put(s, count.get(s) + 1);
+                s += "_" + count.get(s);
+            } else {
+                count.put(s, 1);
             }
-            OutputAction action = instance.getActions(i);
-            algorithms.add(action.getAlgorithm());
+            sNames.add(s);
         }
         StringBuilder s = new StringBuilder("MODULE main()\n\nVAR _state : {");
         for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
-            s.append("state").append(i).append(i == MultiMaskEfsmSkeleton.STATE_COUNT - 1 ? "" : ", ");
+            s.append("s_").append(sNames.get(i)).append(i == MultiMaskEfsmSkeleton.STATE_COUNT - 1 ? "" : ", ");
         }
         s.append("};\n");
         for (String ies : MultiMaskEfsmSkeleton.INPUT_EVENTS.keySet()) {
@@ -365,15 +349,30 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
         for (String oe : outputEvents) {
             s.append("VAR ").append(oe).append(" : boolean;\n");
         }
-        assert names.size() == algorithms.get(0).length();
         for (String n : names) {
             s.append("VAR ").append(n).append(" : boolean;\n");
         }
-        s.append(vars).append("\nASSIGN\n\ninit(_state) := state").append(instance.getInitialState()).append(";\n\nnext(_state) := case\n");
+        s.append(vars).append("\nASSIGN\n\ninit(_state) := s_").append(sNames.get(instance.getInitialState())).append(";\n\nnext(_state) := case\n");
         for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
-            s.append("    ");
-            for (int j = 0; j < transitions.get(i).size(); j++) {
-                s.append(transitions.get(i).get(j)).append(j == transitions.get(i).size() - 1 ? " : state" + i + ";\n" : " | ");
+            State state = skeleton.getState(i);
+            for(int e = 0; e < MultiMaskEfsmSkeleton.INPUT_EVENT_COUNT; e++) {
+                for(int t = 0; t < state.getTransitionGroupCount(e); t++) {
+                    TransitionGroup tg = state.getTransitionGroup(e, t);
+                    if(tg != null) {
+                        List<Integer> m = tg.getMeaningfulPredicateIds();
+                        for (int j = 0; j < tg.getTransitionsCount(); j++) {
+                            int ns = tg.getNewState(j);
+                            if (ns != -1) {
+                                s.append("    _state = s_").append(sNames.get(i)).append(" & ").append(ie.get(e));
+                                for (int k = 0; k < m.size(); k++) {
+                                    boolean tr = ((j >> (m.size() - 1 - k)) & 1) == 1;
+                                    s.append(" & ").append(tr ? "" : "!").append(MultiMaskEfsmSkeleton.PREDICATE_NAMES.get(m.get(k)));
+                                }
+                                s.append(" : s_").append(sNames.get(ns)).append(";\n");
+                            }
+                        }
+                    }
+                }
             }
         }
         s.append("    TRUE : _state;\nesac;\n\n");
@@ -382,7 +381,7 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
                 s.append(ss).append(" := FALSE");
                 for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
                     if (instance.getActions(i).getOutputEvent().equals(ss)) {
-                        s.append(" | _state = state").append(i);
+                        s.append(" | _state = s_").append(sNames.get(i));
                     }
                 }
                 s.append(";\n\n");
@@ -394,13 +393,13 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
             s.append("next(").append(names.get(i)).append(") := case\n    FALSE");
             for (int j = 0; j < MultiMaskEfsmSkeleton.STATE_COUNT; j++) {
                 if (instance.getActions(j).getAlgorithm().charAt(i) == '1') {
-                    s.append(" | next(_state) = state").append(j);
+                    s.append(" | next(_state) = s_").append(sNames.get(j));
                 }
             }
             s.append(" : TRUE;\n    FALSE");
             for (int j = 0; j < MultiMaskEfsmSkeleton.STATE_COUNT; j++) {
                 if (instance.getActions(j).getAlgorithm().charAt(i) == '0') {
-                    s.append(" | next(_state) = state").append(j);
+                    s.append(" | next(_state) = s_").append(sNames.get(j));
                 }
             }
             s.append(" : FALSE;\n    TRUE : ").append(names.get(i)).append(";\nesac;\n\n");
