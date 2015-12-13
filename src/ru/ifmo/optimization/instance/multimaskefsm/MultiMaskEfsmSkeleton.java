@@ -191,6 +191,9 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
 //                        if (!tg.isTransitionUsed(tranId)) {
 //                            continue;
 //                        }
+                        if (stateIdMap.get(stateId) == null || stateIdMap.get(tg.getNewState(tranId)) == null) {
+                            continue;
+                        }
                         sb.append(stateIdMap.get(stateId) + " -> " + stateIdMap.get(tg.getNewState(tranId))
                                 + " [label = \"REQ [" + tranIdToLabel(tranId, tg.getMeaningfulPredicateIds()) + "] ()\"];\n");
                     }

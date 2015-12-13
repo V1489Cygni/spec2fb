@@ -1,17 +1,23 @@
 package ru.ifmo.optimization.instance.multimaskefsm.task;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import ru.ifmo.optimization.instance.FitInstance;
 import ru.ifmo.optimization.instance.InstanceMetaData;
 import ru.ifmo.optimization.instance.comparator.MaxSingleObjectiveComparator;
-import ru.ifmo.optimization.instance.multimaskefsm.*;
+import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskEfsm;
+import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskEfsmSkeleton;
+import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskMetaData;
+import ru.ifmo.optimization.instance.multimaskefsm.OutputAction;
 import ru.ifmo.optimization.instance.task.AbstractTaskConfig;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
 import ru.ifmo.util.Pair;
 import ru.ifmo.util.StringUtils;
-
-import java.io.*;
-import java.util.*;
-import java.util.Map.Entry;
 
 public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleton> {
     protected VarsActionsScenario[] scenarios;
@@ -188,8 +194,9 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
 
         String currentActions = scenario.getActions(0);
         currentActions = applyMask(currentActions, instance.getActions(currentState).getAlgorithm());
+        outputs.add(currentActions + (instance.getActions(currentState).getOutputEvent()));
         int firstErrorPosition = -1;
-        for (int i = 0; i < scenario.size(); i++) {
+        for (int i = 1; i < scenario.size(); i++) {
             int nextState = instance.getNewState(currentState, scenario.get(i).getInputEvent(), scenario.get(i).getVariableValues());
             if (nextState != -1) {
                 numberOfStateChanges++;
@@ -274,15 +281,16 @@ public class MultiMaskTask extends AbstractOptimizationTask<MultiMaskEfsmSkeleto
     public FitInstance<MultiMaskEfsmSkeleton> getFitInstance(MultiMaskEfsmSkeleton instance) {
         //first, try with short scenarios
         MultiMaskEfsm labeledInstance = label(instance, shortScenarios);
+        
         RunData f = getF(labeledInstance, shortScenarios);
 
         //if the fitness value is large enough, try with medium scenarios
-        if (f.fitness > startMediumPreciseFitnessCalculation) {
+        if (f.fitness >= startMediumPreciseFitnessCalculation) {
             labeledInstance = label(instance, mediumScenarios);
             f = getF(labeledInstance, mediumScenarios);
 
             //if the fitness value is large enough, try with full scenarios
-            if (f.fitness > startPreciseFitnessCalculation) {
+            if (f.fitness >= startPreciseFitnessCalculation) {
                 labeledInstance = label(instance, scenarios);
                 f = getF(labeledInstance, scenarios);
             }

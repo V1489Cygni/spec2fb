@@ -51,12 +51,12 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
         RunData f = getF(labeledInstance, shortScenarios);
 
         //if the fitness value is large enough, try with medium scenarios
-        if (f.fitness > startMediumPreciseFitnessCalculation) {
+        if (f.fitness >= startMediumPreciseFitnessCalculation) {
             labeledInstance = label(instance, mediumScenarios);
             f = getF(labeledInstance, mediumScenarios);
 
             //if the fitness value is large enough, try with full scenarios
-            if (f.fitness > startPreciseFitnessCalculation) {
+            if (f.fitness >= startPreciseFitnessCalculation) {
                 labeledInstance = label(instance, scenarios);
                 f = getF(labeledInstance, scenarios);
             }
@@ -86,11 +86,11 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
         RunData f = getF(instance, shortScenarios);
 
         //if the fitness value is large enough, try with medium scenarios
-        if (f.fitness > startMediumPreciseFitnessCalculation) {
+        if (f.fitness >= startMediumPreciseFitnessCalculation) {
             f = getF(instance, mediumScenarios);
 
             //if the fitness value is large enough, try with full scenarios
-            if (f.fitness > startPreciseFitnessCalculation) {
+            if (f.fitness >= startPreciseFitnessCalculation) {
                 f = getF(instance, scenarios);
             }
         }
@@ -411,12 +411,16 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
 
     public void printStats() {
         synchronized (this) {
-            System.out.println("TLFitness: satisfied_specifications: {max: " + maxSatisfiedSpecifications +
-                    ", average: " + (averageSatisfiedSpecifications / fitnessEvaluations) + "}");
+        	if (fitnessEvaluations > 0) {
+        		System.out.println("TLFitness: satisfied_specifications: {max: " + maxSatisfiedSpecifications +
+        				", average: " + (averageSatisfiedSpecifications / fitnessEvaluations) + "}");
+        	}
             averageSatisfiedSpecifications = 0;
             maxSatisfiedSpecifications = 0;
             fitnessEvaluations = 0;
-            System.out.println("Time: " + time + ", num: " + number + ", avg: " + time / number);
+            if (number > 0) {
+            	System.out.println("Time: " + time + ", num: " + number + ", avg: " + time / number);
+            }
         }
     }
 
