@@ -1,7 +1,7 @@
-1
+3
 
---LTLSPEC G(!(c1Extend & c1Retract))
---LTLSPEC G(!(c2Extend & c2Retract))
+LTLSPEC G(!(c1Extend & c1Retract))
+LTLSPEC G(!(c2Extend & c2Retract))
 --LTLSPEC G(vcExtend -> !((c1Extend & !c1End) | (c1Retract & !c1Home) | (c2Extend & !c2End) | (c2Retract & !c2Home)))
 --LTLSPEC G((c1Extend & !c1End) | (c1Retract & !c1Home) | (c2Extend & !c2End) | (c2Retract & !c2Home) -> vcHome)
 

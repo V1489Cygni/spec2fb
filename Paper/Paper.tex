@@ -1,0 +1,28 @@
+1. Introduction
+
+The international standart IEC 61499 is a standart for industrial process measurement and control systems.
+The specification of IEC 61499 defines a generic model for distributed control systems and is based on the IEC 61131 standart.
+An application in IEC 61499 consists of a network of basic function blocks (BFB). Basic function block is described in terms
+of an execution control chart (ECC), which is a finite-state machine (FSM) where every state can have several actions.
+Each action references one or zero algorithms and one or zero events. Algorithms can be implemented as defined in compliant standarts.
+
+Formal specification is a useful thing to have in a software project. It usually expressed in temporal logics, e.g.
+Linear Temporal Logic (LTL). Such specifications are often written for finite-state machine models of software.
+
+It is natural for one, having a temporal specification of a function block, to be willing to automatically generate it.
+In this paper we propose to solve that problem. The contribution of the paper is an approach based on genetic programming (GP)
+for evolving execution control charts for basic function blocks, that satisfy the given specification.
+
+2. Problem Statemanet
+
+In this section we provide a more formal problem statement. We first briefly review the main concepts used in this study.
+
+An ECC is a -tuple $\langle \rangle$, where $E$ is a set of input events, $I$ is a set of input boolean variables,
+$Y$ is a set of states, $Z$ is a set of output events, $O$ is a set of output boolean variables, $y_0$ is the initial state,
+$\phi : Y \times E \times \{0,1\}^{|I|} \rightarrow Y$ is the transition function, $\sigma : Y \rightarrow Z^*$ is the output
+actions function and $\eta : Y \rightarrow \{0,1,x\}^{|O|}$ is the output variables function, where 0 and 1 mean assigning a
+corresponding value to a variable and $x$ means preserving its current value.
+
+The LTL language consists of problem dependent propositional variables, Boolean logic operators $\vee, \wedge, \lnot, \rightarrow$
+and the following set of temporal operators. Globally - $G(f)$ means that than $f$ has to hold for all states. next - $X(f)$ means
+that $f$ has to hold in the next state.
