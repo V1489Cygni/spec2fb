@@ -1,4 +1,8 @@
-1. Introduction
+\documentclass[fleqn,twocolumn]{article}
+
+\begin{document}
+
+\section{1. Introduction}
 
 The international standart IEC 61499 is a standart for industrial process measurement and control systems.
 The specification of IEC 61499 defines a generic model for distributed control systems and is based on the IEC 61131 standart.
@@ -13,16 +17,109 @@ It is natural for one, having a temporal specification of a function block, to b
 In this paper we propose to solve that problem. The contribution of the paper is an approach based on genetic programming (GP)
 for evolving execution control charts for basic function blocks, that satisfy the given specification.
 
-2. Problem Statemanet
+\section{2. Problem Statement}
 
 In this section we provide a more formal problem statement. We first briefly review the main concepts used in this study.
 
-An ECC is a -tuple $\langle \rangle$, where $E$ is a set of input events, $I$ is a set of input boolean variables,
-$Y$ is a set of states, $Z$ is a set of output events, $O$ is a set of output boolean variables, $y_0$ is the initial state,
-$\phi : Y \times E \times \{0,1\}^{|I|} \rightarrow Y$ is the transition function, $\sigma : Y \rightarrow Z^*$ is the output
-actions function and $\eta : Y \rightarrow \{0,1,x\}^{|O|}$ is the output variables function, where 0 and 1 mean assigning a
-corresponding value to a variable and $x$ means preserving its current value.
+An ECC is a nine-tuple $\langle E, I, Y, Z, O, y_0, \phi, \sigma, \eta \rangle$, where $E$ is a set of input events,
+$I$ is a set of input boolean variables, $Y$ is a set of states, $Z$ is a set of output events, $O$ is a set of output boolean variables,
+$y_0$ is the initial state, $\phi : Y \times E \times \{0,1\}^{|I|} \rightarrow Y$ is the transition function,
+$\sigma : Y \rightarrow Z^*$ is the output actions function and $\eta : Y \rightarrow \{0,1,x\}^{|O|}$ is the output variables function,
+where 0 and 1 mean assigning a corresponding value to a variable and $x$ means preserving its current value.
 
 The LTL language consists of problem dependent propositional variables, Boolean logic operators $\vee, \wedge, \lnot, \rightarrow$
 and the following set of temporal operators. Globally - $G(f)$ means that than $f$ has to hold for all states. next - $X(f)$ means
-that $f$ has to hold in the next state.
+that $f$ has to hold in the next state. Future - $F(f)$ means that $f$ has to hold in some state in the future. Until - $U(f, g)$
+means that $f$ has to hold until $g$ holds. Release - $R(f, g)$ means that $g$ has to hold until $f$ holds, or $g$ has to hold
+forever if $f$ never holds.
+
+In this work we use the following propositional variables: wasEvent($e$), $e \in E$ (input event $e$ occured), wasAction($z$),
+$z \in Z$ (output event $z$ was generated), also input and output variables can be used here.
+
+Scenario is a sequence of four-tuples $\langle e, i, z, o \rangle$, where $e : E^*$ is a set of input events, $i : \{0,1\}^{|I|}$ is
+a vector of input varaible values, $z : Z^*$ is a set of output events and $o : \{0,1\}^{|O|}$ is a vector of output variables values.
+An ECC is said to satisfy a scenario if executed and given the corresponding input events and variables it will produce corresponding
+output events and variables.
+
+Let $a$ be a set of LTL formulas and $b$ be a set of scenarios. The goal is to find an ECC $c$ which will satisfy the following constraints.
+1. All formulas from $a$ must hold for $c$.
+2. $c$ must satisfy all scenarios from $b$.
+
+\section{3. Proposed approach.}
+
+For ECC model we use the parallel version of the MuACO algorithm. The algorithm starts with randomly generated initial solutions and explores
+the search space using mutation operators, which make rather small changes to the ECC. The degree to which a candidate solution complies
+with execution scenarios and specification is evaluated using a so-called fitness function. Below we describe the representation of ECC,
+the objective fiteness function and a mutation operator.
+
+\subsection{3.1 Representation of ECC.}
+
+The easiest way to represent the transitions relation $\phi$ of an ECC in an individual of a metaheuristic algorithm is to store a $|E| \times 2^{|I|}$
+table for each state: a transition array of $2^{|I|}$ elements for each input event. However, due to the possibly large numer of input variables this
+naive approach is infeasible. A better way to represent the transitions relation is the reduced tables approach proposed in \cite{mrt}. In this approach it is
+assumed that not all input variables are essential for determining the appropriate transition in each state. Variables that are necessary are called
+significant, all other variables are called insignificant. Indeed, it is often the case that, though an FB has ten input variables, two or three variables are
+enough for making the right transition choice. Each state in the reduced tables approach has an associated significance mask $m$, which contains a Boolean
+significance variable for each input variable. If for some state $m_i = true$, then the input variable $x_i$ is significant in this state.
+
+However, simply adopting the reduced tables approach is not enough for modeling ECCs. The reason is that the reduced tables approach only allows to represent
+rather simple Boolean formulas which do not use parentheses or disjunction, e.g. $x_1 \wedge \lnot x_2 \wedge x_3$. Boolean formulas on ECC transitions are
+often more complicated, e.g. $x_1 \wedge (\lnot x_2 \vee \lnot x_3)$. To represent such formulas we will use the fact that any Boolean formula can be represented
+in Disjunctive Normal Form (DNF). Basically, each state will have a set of associated transition groups for each input event, where each transition group is a
+reduced transition table with its own significance mask. For example, formula $x_1 \wedge (\lnot x_2 \vee \lnot x_3)$, which is equivalent to 
+$(x_1 \wedge \lnot x_2) \vee (x_1 \wedge \lnot x_3)$, can be represented with two transition groups with variables $(x_1, x_2)$ and $(x_1 , x_3)$ being significant
+in the first and second group, respectively.
+
+Summing up, our ECC model is represented as a set of states $Y$ , where each state $y_i$ has a set of transition groups $T_i$ for each input event.
+Each transition group $t \in T_i$ has an associated Boolean array called the input variable significance mask $m_t$ and a transition table $\phi_t$ of $1 \times 2^{sum(m_t)}$
+elements, where $sum(m_t)$ is the number of elements in $m_t$ that are true. Each j-th element of $\phi_t$ stores the new state for that transition. For example,
+if there are four significant input variables $x_0–x_3$, $\phi_t^5$ stores the new state that the ECC has to change to when $(x_0, x_1, x_2, x_3) = (0, 1, 0, 1)$
+since $0101 = 2^5$.
+
+The outputs relation is implemented with algorithms which are associated with the ECC. Since in our simplification all output variables are binary,
+these algorithms will be rather simple. Instead of storing algorithms and output events in the model and evolving them simultaneously with the ECC
+transitions, we deduce them from execution scenarios before fitness evaluation using a state labeling algorithm. Our state labeling algorithm is based
+on the same idea as the original state labeling proposed in \cite{ldfa} for learning Deterministic Finite Automata from labeled strings.
+
+\subsection{3.2 Fitness function.}
+
+The fitness function we used consists of four components:
+$$
+F = c_1F_{ed} + c_2F_{fe} + c_3F_{sc} + c_4F_{tl}
+$$
+where $F_{ed}$ is based on string edit distance, $F_{fe}$ is based on the position of the first error the candidate model makes, $F_{sc}$ is the number of state changes
+and $F_{tl}$ is the satisfied formulas ratio.
+
+To evaluate the number of satisfied formulas we will use NuSMV. This tool checks whatever a given smv-model satisfies a given LTL formula. A following approach is used
+to convert an ECC into an smv-model. We will create a variable $eccState : Y$ to store current state. For each input an output event we will create a boolean variable,
+indicating wahatever this event ocuured or not, For each input and output varaible we will create a corresponding boolean varaible.
+Initially $eccState$ is set into ECC start state. Then on each step its value is recalculated according to its current value, input events and valiables. Output events
+and variables are calculated according to a new value of $eccState$. Depending on the ECC we can generate some event, set variable into $true$, set it into $false$ or
+left unchanged.
+An smv-model of an environment is given to an alorithm as an argument. The algorithm then will concatenate it with a generated smv-model of an ECC. The whole result
+is then tested using NuSMV.
+
+Evaluation of $F_{tl}$ works much longer than any other. To improve performance such an approach is used. If fitness evaluated with other fitness functions is
+greater than some threshold we will evaluate $F_{tl}$, otherwise we will evaluate it with some proability $p$ and preserve its previous value with probability $1 - p$.
+
+\subsection{3.3 Mutation operator.}
+
+NuSMV can not only say whatever a given model satisfies a formula, but also give us a counterexample, if it doesn't. Counterexample is an execution scenario and we can
+use it to increase the probability of removing wrong transitions.
+
+To do it we will associate with a transition its weight $w_t$. Initially $w_t = 1$. Then we will execute the counterexamples and each time we meet a transition $t$, we
+will increase its weight: $w_t = w_t + \lambda$. Then we will randomly choose one transition $t$. The probability of doing it is $\frac{w_t}{\sum_{t \in T}w_t}$.
+Then we will change its destination to another randomly chosen state.
+
+\begin{thebibliography}{2}
+
+\bibitem{mrt}N. Polikarpova, V. Tochilin, and A. Shalyto, “Method of reduced tables for generation of automata with a large number of input variables
+based on genetic programming,” Journal of Computer and Systems Sciences International, vol. 49, no. 2, pp. 265–282, 2010. [Online].
+Available: http://dx.doi.org/10.1134/S1064230710020127
+
+\bibitem{ldfa}S. M. Lucas and T. J. Reynolds, “Learning Deterministic Finite Automata with a Smart State Labeling Evolutionary Algorithm,” IEEE
+Trans. Pattern Anal. Mach. Intell., vol. 27, no. 7, pp. 1063–1074, Jul. 2005. [Online]. Available: http://dx.doi.org/10.1109/TPAMI.2005.143
+
+\end{thebibliography}
+
+\end{document}
