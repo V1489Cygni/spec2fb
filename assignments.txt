@@ -18,17 +18,21 @@ c1End := st1 = s3 | st1 = s4;
 init(vst) := v1;
 next(vst) := case
     next(CNF & vcExtend) & vst = v1 : v2;
-    next(vcExtend) & vst = v2 : v4;
-    next(vcExtend) & vst = v3 : v4;
+    next(vcExtend) & vst = v2 : v3;
+    next(vcExtend) & vst = v3 : v6;
+    next(vcExtend) & vst = v4 : v6;
+    next(vcExtend) & vst = v5 : v6;
     next(!vcExtend) & vst = v2 : v1;
     next(!vcExtend) & vst = v3 : v1;
-    next(CNF & !vcExtend) & vst = v4 : v3;
+    next(!vcExtend) & vst = v4 : v1;
+    next(!vcExtend) & vst = v5 : v4;
+    next(CNF & !vcExtend) & vst = v6 : v5;
     TRUE : vst;
 esac;
 
-vcHome := vst = v1 | vst = v2;
+vcHome := vst = v1 | vst = v2 | vst = v3;
 
-vcEnd := vst = v3 | vst = v4;
+vcEnd := vst = v4 | vst = v5 | vst = v6;
 
 init(c2Home) := TRUE;
 next(c2Home) := case
