@@ -17,7 +17,18 @@ It is natural for one, having a temporal specification of a function block, to b
 In this paper we propose to solve that problem. The contribution of the paper is an approach based on genetic programming (GP)
 for evolving execution control charts for basic function blocks, that satisfy the given specification.
 
-\section{2. Problem Statement}
+\section{2. Related work.}
+
+Since a functional block is only a part of a system, there are two main approaches to its verification.
+The functional block can be verified separately from the system (open-loop verification), or it can be incorporated into the system and
+then the whole system is verified (closed-loop verification).
+
+The approach, presented in this paper, lays in the middle. The functional block will be converted into an smv-model, concatenated with the
+model of the environment and then verified. All we require from the model of the environment is that it will interact with the block
+in a way the real environment does. All other details are redundant. This means that the model can be much simpler than the environment,
+which can improve performance dramatically. The disadvantage of such an approach is that we need to find such a model, which can be a nontrivial task.
+
+\section{3. Problem Statement}
 
 In this section we provide a more formal problem statement. We first briefly review the main concepts used in this study.
 
@@ -45,14 +56,14 @@ Let $a$ be a set of LTL formulas and $b$ be a set of scenarios. The goal is to f
 1. All formulas from $a$ must hold for $c$.
 2. $c$ must satisfy all scenarios from $b$.
 
-\section{3. Proposed approach.}
+\section{4. Proposed approach.}
 
 For ECC model we use the parallel version of the MuACO algorithm. The algorithm starts with randomly generated initial solutions and explores
 the search space using mutation operators, which make rather small changes to the ECC. The degree to which a candidate solution complies
 with execution scenarios and specification is evaluated using a so-called fitness function. Below we describe the representation of ECC,
 the objective fiteness function and a mutation operator.
 
-\subsection{3.1 Representation of ECC.}
+\subsection{4.1 Representation of ECC.}
 
 The easiest way to represent the transitions relation $\phi$ of an ECC in an individual of a metaheuristic algorithm is to store a $|E| \times 2^{|I|}$
 table for each state: a transition array of $2^{|I|}$ elements for each input event. However, due to the possibly large numer of input variables this
@@ -81,7 +92,7 @@ these algorithms will be rather simple. Instead of storing algorithms and output
 transitions, we deduce them from execution scenarios before fitness evaluation using a state labeling algorithm. Our state labeling algorithm is based
 on the same idea as the original state labeling proposed in \cite{ldfa} for learning Deterministic Finite Automata from labeled strings.
 
-\subsection{3.2 Fitness function.}
+\subsection{4.2 Fitness function.}
 
 The fitness function we used consists of four components:
 $$
@@ -92,7 +103,7 @@ and $F_{tl}$ is the satisfied formulas ratio.
 
 To evaluate the number of satisfied formulas we will use NuSMV. This tool checks whatever a given smv-model satisfies a given LTL formula. A following approach is used
 to convert an ECC into an smv-model. We will create a variable $eccState : Y$ to store current state. For each input an output event we will create a boolean variable,
-indicating wahatever this event ocuured or not, For each input and output varaible we will create a corresponding boolean varaible.
+indicating wahatever this event occurred or not, For each input and output varaible we will create a corresponding boolean varaible.
 Initially $eccState$ is set into ECC start state. Then on each step its value is recalculated according to its current value, input events and valiables. Output events
 and variables are calculated according to a new value of $eccState$. Depending on the ECC we can generate some event, set variable into $true$, set it into $false$ or
 left unchanged.
@@ -102,7 +113,7 @@ is then tested using NuSMV.
 Evaluation of $F_{tl}$ works much longer than any other. To improve performance such an approach is used. If fitness evaluated with other fitness functions is
 greater than some threshold we will evaluate $F_{tl}$, otherwise we will evaluate it with some proability $p$ and preserve its previous value with probability $1 - p$.
 
-\subsection{3.3 Mutation operator.}
+\subsection{4.3 Mutation operator.}
 
 NuSMV can not only say whatever a given model satisfies a formula, but also give us a counterexample, if it doesn't. Counterexample is an execution scenario and we can
 use it to increase the probability of removing wrong transitions.
@@ -110,6 +121,37 @@ use it to increase the probability of removing wrong transitions.
 To do it we will associate with a transition its weight $w_t$. Initially $w_t = 1$. Then we will execute the counterexamples and each time we meet a transition $t$, we
 will increase its weight: $w_t = w_t + \lambda$. Then we will randomly choose one transition $t$. The probability of doing it is $\frac{w_t}{\sum_{t \in T}w_t}$.
 Then we will change its destination to another randomly chosen state.
+
+\section{5. Case study on PnP manipulator.}
+
+In this section we will show results for a PnP manipulator. The PnP manipulator is a robotic hand. It has three input tracks and one output track.
+It has two horizontal cylinders. Each cylinder can be either extended or retracted. Four possible combinations allow us to position the hand
+over each of the tracks. The hand also has a vertical cylinder which moves up and down a suction unit. The suction unit is used to grab details
+from the tracks. The PnP manipulator has sensors which detect whatever its cylinders are in extended or retracted positions, sensors which detect
+whatever there is something on each of the input tracks and a sensor to detect whatever something is grabbed with the sucction unit. The goal
+of the PnP manipulator is to move details from input tracks to the output one.
+
+\subsection{5.1 Environment model.}
+
+For each input track we will create two boolean variables $p_i$ and $pp_i$. We give no restriction on value of $p_i$. Its value is arbitrary at any time.
+The value of $pp_i$ is determined in such a way. If the sucction unit is currently grabbing the thing from $i$th track, $pp_i$ is set into $false$, otherwise
+if $pp_i = true$, we preserve its value, otherwise $pp_i := p_i$. This approach allows us to model a situation when details can appear on tracks at arbitrary
+time, but ones appeared the stay there until being grabbed with suction unit.
+
+To model the sucction unit we need just one boolean variable $vs$, indicating whatever it is on or off. If the manipulator says to turn it on or off, we do it,
+otherwise we leave its value unchanged.
+
+Since cylinders are moving from retracted position to extended and back not instantly, for each cylinder we will create a variable $cs_i : \{ cst_j | j = 0 .. M \}$,
+indicating its current state. We will recalculate it according to the commands the manipulator produces. The sensors are saying whatever the cylinder is in
+retracted or extended position depending on the value of $cs_i$.
+
+The last thing we have to do is to set up a sensor indicating whatever the suction unit is grabbing something or not. To do this we will create a boolean
+variable $vac$. The algorithm to recalculate its value is simple. If the sucction unit is off $vac := false$, if the sucction unit is placed over a
+track with a detail, vertical cylinder is extended and the sucction unit is on then $vac := true$, otherwise its value left unchanged.
+
+The whole model is then working in such a way. In each step we produce an input event, requesting the manipulator to recalculate its state. This is done
+according to ECC, current state and current values of input variables. Then we recalculate the state of environment according to its current state,
+output variables, produced by the manipulator, and rules above.
 
 \begin{thebibliography}{2}
 
