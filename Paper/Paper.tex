@@ -128,17 +128,17 @@ In this section we will show results for a PnP manipulator. The PnP manipulator 
 It has two horizontal cylinders. Each cylinder can be either extended or retracted. Four possible combinations allow us to position the hand
 over each of the tracks. The hand also has a vertical cylinder which moves up and down a suction unit. The suction unit is used to grab details
 from the tracks. The PnP manipulator has sensors which detect whatever its cylinders are in extended or retracted positions, sensors which detect
-whatever there is something on each of the input tracks and a sensor to detect whatever something is grabbed with the sucction unit. The goal
+whatever there is something on each of the input tracks and a sensor to detect whatever something is grabbed with the suction unit. The goal
 of the PnP manipulator is to move details from input tracks to the output one.
 
 \subsection{5.1 Environment model.}
 
 For each input track we will create two boolean variables $p_i$ and $pp_i$. We give no restriction on value of $p_i$. Its value is arbitrary at any time.
-The value of $pp_i$ is determined in such a way. If the sucction unit is currently grabbing the thing from $i$th track, $pp_i$ is set into $false$, otherwise
+The value of $pp_i$ is determined in such a way. If the suction unit is currently grabbing the thing from $i$th track, $pp_i$ is set into $false$, otherwise
 if $pp_i = true$, we preserve its value, otherwise $pp_i := p_i$. This approach allows us to model a situation when details can appear on tracks at arbitrary
 time, but ones appeared the stay there until being grabbed with suction unit.
 
-To model the sucction unit we need just one boolean variable $vs$, indicating whatever it is on or off. If the manipulator says to turn it on or off, we do it,
+To model the suction unit we need just one boolean variable $vs$, indicating whatever it is on or off. If the manipulator says to turn it on or off, we do it,
 otherwise we leave its value unchanged.
 
 Since cylinders are moving from retracted position to extended and back not instantly, for each cylinder we will create a variable $cs_i : \{ cst_j | j = 0 .. M \}$,
@@ -146,8 +146,8 @@ indicating its current state. We will recalculate it according to the commands t
 retracted or extended position depending on the value of $cs_i$.
 
 The last thing we have to do is to set up a sensor indicating whatever the suction unit is grabbing something or not. To do this we will create a boolean
-variable $vac$. The algorithm to recalculate its value is simple. If the sucction unit is off $vac := false$, if the sucction unit is placed over a
-track with a detail, vertical cylinder is extended and the sucction unit is on then $vac := true$, otherwise its value left unchanged.
+variable $vac$. The algorithm to recalculate its value is simple. If the suction unit is off $vac := false$, if the suction unit is placed over a
+track with a detail, vertical cylinder is extended and the suction unit is on then $vac := true$, otherwise its value left unchanged.
 
 The whole model is then working in such a way. In each step we produce an input event, requesting the manipulator to recalculate its state. This is done
 according to ECC, current state and current values of input variables. Then we recalculate the state of environment according to its current state,
