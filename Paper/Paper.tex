@@ -146,7 +146,7 @@ indicating its current state. We will recalculate it according to the commands t
 retracted or extended position depending on the value of $cs_i$.
 
 The last thing we have to do is to set up a sensor indicating whatever the suction unit is grabbing something or not. To do this we will create a boolean
-variable $vac$. The algorithm to recalculate its value is simple. If the suction unit is off $vac := false$, if the suction unit is placed over a
+variable $vac$. The algorithm to recalculate its value is simple. If the suction unit is off then $vac := false$, if the suction unit is placed over a
 track with a detail, vertical cylinder is extended and the suction unit is on then $vac := true$, otherwise its value left unchanged.
 
 The whole model is then working in such a way. In each step we produce an input event, requesting the manipulator to recalculate its state. This is done
