@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.algorithm.muaco.config.MuACOConfig;
 import ru.ifmo.optimization.algorithm.muaco.graph.Node;
@@ -13,7 +14,6 @@ import ru.ifmo.optimization.instance.fsm.mutation.FsmMutation;
 import ru.ifmo.optimization.instance.fsm.task.AbstractAutomatonTask;
 import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-import ru.ifmo.random.RandomProvider;
 
 public class MultiStartMuACO extends MuACO<FSM, FsmMutation> {
 	
@@ -79,7 +79,7 @@ public class MultiStartMuACO extends MuACO<FSM, FsmMutation> {
 				startNodes.add(starts.get(i));
 			}
 			while (startNodes.size() < numberOfAnts) {
-				startNodes.add(starts.get(RandomProvider.getInstance().nextInt(starts.size())));
+				startNodes.add(starts.get(ThreadLocalRandom.current().nextInt(starts.size())));
 			}
 			return startNodes;
 		}

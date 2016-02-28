@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.AbstractOptimizationAlgorithm;
 import ru.ifmo.optimization.OptimizationAlgorithmCutoff;
@@ -20,7 +21,6 @@ import ru.ifmo.optimization.instance.Mutator;
 import ru.ifmo.optimization.instance.fsm.InitialFSMGenerator;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
-import ru.ifmo.random.RandomProvider;
 
 public class GeneticAlgorithm<Instance extends Checkable<Instance, MutationType>, 
 				MutationType extends InstanceMutation<Instance>> extends AbstractOptimizationAlgorithm<Instance> {
@@ -96,15 +96,15 @@ public class GeneticAlgorithm<Instance extends Checkable<Instance, MutationType>
     			List<Instance> offspring = new ArrayList<Instance>(2);
     			List<FitInstance<Instance>> fitOffspring = new ArrayList<FitInstance<Instance>>(2);
     			List<Instance> parents = new ArrayList<Instance>(2);
-    			int firstParentId = RandomProvider.getInstance().nextInt(populationSize);
+    			int firstParentId = ThreadLocalRandom.current().nextInt(populationSize);
     			int secondParentId = firstParentId;
     			while (secondParentId == firstParentId) {
-    				secondParentId = RandomProvider.getInstance().nextInt(populationSize);
+    				secondParentId = ThreadLocalRandom.current().nextInt(populationSize);
     			}
     			parents.add(population.get(firstParentId).getInstance());
     			parents.add(population.get(secondParentId).getInstance());
 
-    			if (RandomProvider.getInstance().nextBoolean()) {
+    			if (ThreadLocalRandom.current().nextBoolean()) {
     				Crossover<Instance> crossover = randomCrossover();
     				offspring = crossover.apply(parents);
 
@@ -187,7 +187,7 @@ public class GeneticAlgorithm<Instance extends Checkable<Instance, MutationType>
     }
     
     private FitInstance<Instance> randomIndividual() {
-        return population.get(RandomProvider.getInstance().nextInt(population.size()));
+        return population.get(ThreadLocalRandom.current().nextInt(population.size()));
     }
     
     protected FitInstance<Instance> applyFitness(Instance individual, double sourceFitness, Instance mutatedInstance,
@@ -207,11 +207,11 @@ public class GeneticAlgorithm<Instance extends Checkable<Instance, MutationType>
     }
     
     private Crossover<Instance> randomCrossover() {
-        return crossovers.get(RandomProvider.getInstance().nextInt(crossovers.size()));
+        return crossovers.get(ThreadLocalRandom.current().nextInt(crossovers.size()));
     }
     
     private Mutator<Instance, MutationType> randomMutator() {
-        return mutators.get(RandomProvider.getInstance().nextInt(mutators.size()));
+        return mutators.get(ThreadLocalRandom.current().nextInt(mutators.size()));
     }
     
     private MutatedInstanceMetaData<Instance, MutationType> mutateInstance(Instance instance) {
@@ -230,7 +230,7 @@ public class GeneticAlgorithm<Instance extends Checkable<Instance, MutationType>
         List<FitInstance<Instance>> selected = new ArrayList<FitInstance<Instance>>();
         
         while (selected.size() < 2) {
-            double p = weight[n - 1] * RandomProvider.getInstance().nextDouble();
+            double p = weight[n - 1] * ThreadLocalRandom.current().nextDouble();
             int i = 0;
             while (p > weight[i]) {
                 i++;
@@ -255,15 +255,15 @@ public class GeneticAlgorithm<Instance extends Checkable<Instance, MutationType>
 			List<Instance> offspring = new ArrayList<Instance>(2);
 			List<FitInstance<Instance>> fitOffspring = new ArrayList<FitInstance<Instance>>(2);
 			List<Instance> parents = new ArrayList<Instance>(2);
-			int firstParentId = RandomProvider.getInstance().nextInt(populationSize);
+			int firstParentId = ThreadLocalRandom.current().nextInt(populationSize);
 			int secondParentId = firstParentId;
 			while (secondParentId == firstParentId) {
-				secondParentId = RandomProvider.getInstance().nextInt(populationSize);
+				secondParentId = ThreadLocalRandom.current().nextInt(populationSize);
 			}
 			parents.add(population.get(firstParentId).getInstance());
 			parents.add(population.get(secondParentId).getInstance());
 
-			if (RandomProvider.getInstance().nextBoolean()) {
+			if (ThreadLocalRandom.current().nextBoolean()) {
 				Crossover<Instance> crossover = randomCrossover();
 				offspring = crossover.apply(parents);
 				
@@ -342,7 +342,7 @@ public class GeneticAlgorithm<Instance extends Checkable<Instance, MutationType>
 
     private void bigMutation() {
         for (int i = 0; i < population.size(); i++) {
-        	if (RandomProvider.getInstance().nextBoolean()) {
+        	if (ThreadLocalRandom.current().nextBoolean()) {
         		MutatedInstanceMetaData<Instance, MutationType> mutated = mutateInstance(population.get(i).getInstance());
         		if (OptimizationAlgorithmCutoff.getInstance().doStop(task.getNumberOfFitnessEvaluations())) {
 					return;

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.OptimizationAlgorithmCutoff;
 import ru.ifmo.optimization.algorithm.muaco.MuACO;
@@ -17,7 +18,6 @@ import ru.ifmo.optimization.instance.fsm.task.testsmodelchecking.TestsModelCheck
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-import ru.ifmo.random.RandomProvider;
 
 public class KmeansClusteringParallelMuACO<Instance extends Constructable<Instance>, 
 	MutationType extends InstanceMutation<Instance>> extends CrossoverAndSharedBestParallelMuACO<Instance, MutationType> {
@@ -66,13 +66,11 @@ public class KmeansClusteringParallelMuACO<Instance extends Constructable<Instan
 				if (initialSolutions.isEmpty()) {
 					solutions.add(algorithms.get(i).getBestSolution());
 				} else {
-					solutions.add(initialSolutions.get(RandomProvider.getInstance().nextInt(initialSolutions.size())));
+					solutions.add(initialSolutions.get(ThreadLocalRandom.current().nextInt(initialSolutions.size())));
 				}
 			}
 		}
 		
-		RandomProvider.unregisterAll();
-
 		RandomClusteringTestsModelCheckingTaskFactory factory = null;
 		
 		int ntests = ((TestsModelCheckingTask)task).getNumberOfTests();
@@ -110,12 +108,12 @@ public class KmeansClusteringParallelMuACO<Instance extends Constructable<Instan
 				if (numberOfThreads == numberOfClusters) {
 					algorithms.add(new CrossoverAndSharedBestMuACO<Instance, MutationType>(
 							muacoConfig, (AbstractOptimizationTask<Instance>) factory.createTask(i),
-							bestThreadInstances, i, initialSolutions.get(RandomProvider.getInstance().nextInt(initialSolutions.size()))));
+							bestThreadInstances, i, initialSolutions.get(ThreadLocalRandom.current().nextInt(initialSolutions.size()))));
 				} else {
 					algorithms.add(new CrossoverAndSharedBestMuACO<Instance, MutationType>(
 							muacoConfig, (AbstractOptimizationTask<Instance>) factory.createTask(
-									RandomProvider.getInstance().nextInt(numberOfClusters)), 
-									bestThreadInstances, i, initialSolutions.get(RandomProvider.getInstance().nextInt(initialSolutions.size()))));
+									ThreadLocalRandom.current().nextInt(numberOfClusters)), 
+									bestThreadInstances, i, initialSolutions.get(ThreadLocalRandom.current().nextInt(initialSolutions.size()))));
 				}
 			}
 		} else {
@@ -127,7 +125,7 @@ public class KmeansClusteringParallelMuACO<Instance extends Constructable<Instan
 				} else {
 					algorithms.add(new CrossoverAndSharedBestMuACO<Instance, MutationType>(
 							muacoConfig, (AbstractOptimizationTask<Instance>) factory.createTask(
-									RandomProvider.getInstance().nextInt(numberOfClusters)), 
+									ThreadLocalRandom.current().nextInt(numberOfClusters)), 
 									bestThreadInstances, i, solutions.get(i)));
 				}
 			}

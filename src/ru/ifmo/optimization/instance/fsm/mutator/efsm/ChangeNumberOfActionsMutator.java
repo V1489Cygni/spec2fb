@@ -1,12 +1,13 @@
 package ru.ifmo.optimization.instance.fsm.mutator.efsm;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
 import ru.ifmo.optimization.algorithm.muaco.mutator.MutatedInstanceMetaData;
 import ru.ifmo.optimization.instance.Mutator;
 import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmMutation;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmTransitionMutation;
-import ru.ifmo.random.RandomProvider;
 import ru.ifmo.util.Util;
 
 public class ChangeNumberOfActionsMutator implements Mutator<FSM, FsmMutation> {
@@ -24,19 +25,21 @@ public class ChangeNumberOfActionsMutator implements Mutator<FSM, FsmMutation> {
 			return null;
 		}
 		
-		int state = RandomProvider.getInstance().nextInt(mutated.getNumberOfStates());
+		ThreadLocalRandom random = ThreadLocalRandom.current();
+		
+		int state = random.nextInt(mutated.getNumberOfStates());
 		while (Util.numberOfExistingTransitions(mutated.transitions[state]) == 0) {
-			state = RandomProvider.getInstance().nextInt(mutated.getNumberOfStates());
+			state = random.nextInt(mutated.getNumberOfStates());
 		}
 		
-		int event = RandomProvider.getInstance().nextInt(mutated.getNumberOfEvents());
+		int event = random.nextInt(mutated.getNumberOfEvents());
 		while (mutated.transitions[state][event].getEndState() == -1) {
-			event = RandomProvider.getInstance().nextInt(mutated.getNumberOfEvents());
+			event = random.nextInt(mutated.getNumberOfEvents());
 		}
 		
 		int outputSize = Integer.parseInt(mutated.transitions[state][event].getAction());
 		int newOutputSize;
-		if (RandomProvider.getInstance().nextBoolean()) {
+		if (random.nextBoolean()) {
 			newOutputSize = Math.min(outputSize + 1, actions.length);
 		} else {
 			newOutputSize = Math.max(0, outputSize - 1);

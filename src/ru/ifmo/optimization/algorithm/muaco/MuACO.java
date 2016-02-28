@@ -1,5 +1,17 @@
 package ru.ifmo.optimization.algorithm.muaco;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.PriorityQueue;
+import java.util.concurrent.Callable;
+
 import ru.ifmo.optimization.AbstractOptimizationAlgorithm;
 import ru.ifmo.optimization.OptimizationAlgorithmCutoff;
 import ru.ifmo.optimization.algorithm.muaco.ant.AntStats;
@@ -23,14 +35,6 @@ import ru.ifmo.optimization.instance.multimaskefsm.task.MultiMaskTaskWithTL;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-import ru.ifmo.random.RandomProvider;
-
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.*;
-import java.util.concurrent.Callable;
 
 public class MuACO<Instance extends Constructable<Instance>,
         MutationType extends InstanceMutation<Instance>> extends AbstractOptimizationAlgorithm<Instance> implements Callable<InstanceMetaData<Instance>> {
@@ -57,6 +61,7 @@ public class MuACO<Instance extends Constructable<Instance>,
     private Instance globalBestSolution = null;
     private double globalBestFitness = Double.MIN_VALUE;
     private double globalBestSolutionGenerationTime = 0;
+    
 
     public MuACO(
             MuACOConfig<Instance, MutationType> config,
@@ -91,7 +96,6 @@ public class MuACO<Instance extends Constructable<Instance>,
     }
 
     private void init() {
-        RandomProvider.register();
         this.antStagnationParameter = config.getStagnationParameter();
         this.colonyStagnationParameter = config.getBigStagnationParameter();
         this.maxEvaluationsTillStagnation = config.getMaxEvaluationsTillStagnation();
@@ -101,13 +105,14 @@ public class MuACO<Instance extends Constructable<Instance>,
         this.evaporationRate = config.getEvaporationRate();
         this.restartWithBest = Boolean.parseBoolean(config.getProperty("restart-with-best"));
         this.restartWithInitialSolution = Boolean.parseBoolean(config.getProperty("restart-with-initial-solution"));
+        boolean writeThreadLogs = Boolean.parseBoolean(config.getProperty("write-thread-logs", "false"));
 
         if (restartWithBest && restartWithInitialSolution) {
             throw new RuntimeException("restart-with-best=true and restart-with-initial-solution=true, only one permitted");
         }
         instanceGenerator = config.getInstanceGenerator();
 
-        stats = new AntStats<Instance>(0, Double.MIN_VALUE, null, 0);
+        stats = new AntStats<Instance>(0, Double.MIN_VALUE, null, 0, writeThreadLogs);
         startNodesSelector = config.getStartNodesSelector();
         antFactory = config.getAntFactory(task, stats);
         antColonyFactory = config.getAntColonyFactory();
@@ -183,7 +188,6 @@ public class MuACO<Instance extends Constructable<Instance>,
 
     @Override
     public InstanceMetaData<Instance> call() throws Exception {
-        RandomProvider.register();
         return runAlgorithm();
     }
 
@@ -285,6 +289,8 @@ public class MuACO<Instance extends Constructable<Instance>,
             globalBestSolution = graph.getNodeInstance((Node<Instance>) stats.getBestNode());
             globalBestFitness = stats.getBestFitness();
             globalBestSolutionGenerationTime = stats.getBestNodeGenerationTime();
+            
+            
         }
 
         long startRestart = System.currentTimeMillis();
@@ -305,7 +311,6 @@ public class MuACO<Instance extends Constructable<Instance>,
     protected FitInstance<Instance> getInitialSolutionForRestart() {
         if (restartWithBest && !restartWithInitialSolution) {
             System.out.println("Restarting with best...");
-//			return task.getFitInstance(stats.getBestInstance(), stats.getBestFitness().divideBy(2));
             return task.getFitInstance(stats.getBestInstance());
         } else if (restartWithInitialSolution && !restartWithBest) {
             System.out.println("Restarting with initial solution...");
@@ -354,25 +359,7 @@ public class MuACO<Instance extends Constructable<Instance>,
                     }
                 }
         );
-//		List<Node<Instance>> nodes = new ArrayList<Node<Instance>>();
         nodes.add(stats.getBestNode());
-//		
-//		
-//		int[] ids = new int[maxNumberOfSolutions - 1];
-//		Random random = RandomProvider.getInstance();
-//		for (int i = 0; i < ids.length; i++) {
-//			ids[i] = random.nextInt(graph.getNumberOfNodes());
-//		}
-//		
-//		List<Node<Instance>> graphNodes = graph.getNodes();
-//		for (int i = 0; i < ids.length; i++) {
-//			nodes.add(graphNodes.get(ids[i]));
-//		}
-
-
-//		for (int i = 1; i < maxNumberOfSolutions; i++) {
-//			nodes.add(graph.getNodes().get(RandomProvider.getInstance().nextInt(graph.getNumberOfNodes())));
-//		}
 
         for (Node<Instance> node : graph.getNodes()) {
             if (nodes.size() < maxNumberOfSolutions) {
@@ -398,20 +385,6 @@ public class MuACO<Instance extends Constructable<Instance>,
         }
         return result;
     }
-
-//	public List<weka.core.Instance> getWekaInstances(int maxNumberOfSolutions) {
-//		TestsModelCheckingTask t = (TestsModelCheckingTask)task;
-//		Collection<Node<Instance>> nodes = getBestSolutions(maxNumberOfSolutions);
-//		List<weka.core.Instance> wekaInstances = new ArrayList<weka.core.Instance>();
-//		
-//		for (Node<Instance> node : nodes) {
-//			FSM fsm = (FSM) graph.getNodeInstance(node);
-//			double[] ff = t.getTestFitness(fsm);
-//			wekaInstances.add(new weka.core.Instance(1, ff));
-//		}
-//		
-//		return wekaInstances;
-//	}
 
     public void printSortedBestSolutions(int maxNumberOfSolutions, String filename) {
         TestsModelCheckingTask t = (TestsModelCheckingTask) task;

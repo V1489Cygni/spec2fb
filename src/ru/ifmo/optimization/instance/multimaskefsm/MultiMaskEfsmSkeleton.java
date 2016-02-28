@@ -1,15 +1,15 @@
 package ru.ifmo.optimization.instance.multimaskefsm;
 
-import ru.ifmo.optimization.instance.Constructable;
-import ru.ifmo.optimization.instance.multimaskefsm.task.VarsActionsScenario;
-import ru.ifmo.optimization.instance.mutation.InstanceMutation;
-import ru.ifmo.util.Digest;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import ru.ifmo.optimization.instance.Constructable;
+import ru.ifmo.optimization.instance.multimaskefsm.task.VarsActionsScenario;
+import ru.ifmo.optimization.instance.mutation.InstanceMutation;
+import ru.ifmo.util.Digest;
 
 
 public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleton>, Serializable {
@@ -18,15 +18,20 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
     public static int INPUT_EVENT_COUNT;
     public static int MEANINGFUL_PREDICATES_COUNT;
     public static int TRANSITION_GROUPS_COUNT;
+    public static int MAX_OUTPUT_ACTION_COUNT;
     public static Map<String, Integer> INPUT_EVENTS;
     public static List<String> PREDICATE_NAMES;
     private final List<VarsActionsScenario> counterExamples = new ArrayList<>();
     private int initialState;
     private State[] states;
     private double fitness;
-
+    
     public MultiMaskEfsmSkeleton() {
         states = new State[STATE_COUNT];
+    }
+    
+    public int getNumberOfStates() {
+    	return states.length;
     }
 
     public MultiMaskEfsmSkeleton(State[] states) {
@@ -34,7 +39,7 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
     }
 
     public MultiMaskEfsmSkeleton(MultiMaskEfsmSkeleton other) {
-        states = new State[STATE_COUNT];
+        states = new State[other.states.length];
         this.initialState = other.initialState;
         counterExamples.addAll(other.counterExamples);
         fitness = other.fitness;
@@ -60,6 +65,14 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
         }
         return formula.toString();
     }
+    
+    public void setFixedActionId(int state, int actionNumber, int actionId) {
+    	states[state].setFixedActionId(actionNumber, actionId);
+    }
+    
+    public int getFixedActionId(int state, int actionNumber) {
+    	return states[state].getFixedActionId(actionNumber);
+    }
 
     public double getFitness() {
         return fitness;
@@ -71,6 +84,14 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
 
     public List<VarsActionsScenario> getCounterExamples() {
         return counterExamples;
+    }
+
+    public int getCounterExamplesLength() {
+        int result = 0;
+        for (VarsActionsScenario s : counterExamples) {
+            result += s.size();
+        }
+        return result;
     }
 
     public void clearCounterExamples() {
@@ -86,7 +107,7 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
             states[i].markTransitionsUnused();
         }
     }
-
+    
     public int getInitialState() {
         return initialState;
     }
@@ -192,7 +213,7 @@ public class MultiMaskEfsmSkeleton implements Constructable<MultiMaskEfsmSkeleto
 //                            continue;
 //                        }
                         if (stateIdMap.get(stateId) == null || stateIdMap.get(tg.getNewState(tranId)) == null) {
-                            continue;
+                        	continue;
                         }
                         sb.append(stateIdMap.get(stateId) + " -> " + stateIdMap.get(tg.getNewState(tranId))
                                 + " [label = \"REQ [" + tranIdToLabel(tranId, tg.getMeaningfulPredicateIds()) + "] ()\"];\n");

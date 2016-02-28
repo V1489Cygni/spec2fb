@@ -8,6 +8,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import ru.ifmo.optimization.algorithm.muaco.MuACO;
@@ -24,9 +25,6 @@ import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.instance.task.AbstractTaskConfig;
 import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-import ru.ifmo.random.RandomProvider;
-import weka.attributeSelection.AttributeSelection;
-import weka.attributeSelection.PrincipalComponents;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Attribute;
 import weka.core.FastVector;
@@ -68,7 +66,6 @@ public class NoInterruptionKmeansClusteringParallelMuACO<Instance extends Constr
 		
 		@Override
 		public InstanceMetaData<Instance> call() throws Exception {
-			RandomProvider.register();
 			int iteration = 0;
 			
 			AbstractTaskConfig config = taskFactory.getConfig();
@@ -124,7 +121,7 @@ public class NoInterruptionKmeansClusteringParallelMuACO<Instance extends Constr
 						if (initialSolutions.isEmpty()) {
 							solutions.add(algorithms.get(i).getBestSolution());
 						} else {
-							solutions.add(initialSolutions.get(RandomProvider.getInstance().nextInt(initialSolutions.size())));
+							solutions.add(initialSolutions.get(ThreadLocalRandom.current().nextInt(initialSolutions.size())));
 						}
 					}
 				}
@@ -186,7 +183,7 @@ public class NoInterruptionKmeansClusteringParallelMuACO<Instance extends Constr
 						algorithms.get(i).setTask((AbstractOptimizationTask<Instance>) factory.createTask(i));
 					} else {
 						algorithms.get(i).setTask((AbstractOptimizationTask<Instance>) factory.createTask(
-								RandomProvider.getInstance().nextInt(numberOfClusters)));
+								ThreadLocalRandom.current().nextInt(numberOfClusters)));
 					}
 				}
 				

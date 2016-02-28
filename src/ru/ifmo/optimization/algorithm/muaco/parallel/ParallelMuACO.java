@@ -40,6 +40,7 @@ public class ParallelMuACO<Instance extends Constructable<Instance>,
 			}
 		}
 
+		long start = System.currentTimeMillis();
 		Random random = new Random();
 		for (int i = 0; i < numberOfThreads; i++) {
 			if (initialSolutions.isEmpty()) {
@@ -50,6 +51,7 @@ public class ParallelMuACO<Instance extends Constructable<Instance>,
 						initialSolutions.get(random.nextInt(initialSolutions.size()))));
 			}
 		}
+		System.out.println("Time elapsed for starting threads = " + (System.currentTimeMillis() - start) / 1000.0 + " s.");
 	}
 	
 	protected List<FSM> loadInitialSolutions(String dir) {

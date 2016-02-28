@@ -3,6 +3,7 @@ package ru.ifmo.optimization.algorithm.muaco.parallel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.algorithm.muaco.MuACO;
 import ru.ifmo.optimization.algorithm.muaco.config.MuACOConfig;
@@ -14,7 +15,6 @@ import ru.ifmo.optimization.instance.FitInstance;
 import ru.ifmo.optimization.instance.fsm.crossover.AbstractCrossover;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
-import ru.ifmo.random.RandomProvider;
 
 public class InteractingMuACO <Instance extends Constructable<Instance>, 
 	MutationType extends InstanceMutation<Instance>> extends MuACO<Instance, MutationType> implements
@@ -53,7 +53,7 @@ public class InteractingMuACO <Instance extends Constructable<Instance>,
 	public void offerSolution() {
 		FitInstance<Instance> solution = task.getFitInstance(stats.getBestInstance());
 		System.out.println("Offering solution with f = " + solution.getFitness());
-		otherAlgorithms.get(RandomProvider.getInstance().nextInt(otherAlgorithms.size())).acceptSolution(solution);
+		otherAlgorithms.get(ThreadLocalRandom.current().nextInt(otherAlgorithms.size())).acceptSolution(solution);
 	}
 	
 	protected Edge addChildToBest(Instance instance) {

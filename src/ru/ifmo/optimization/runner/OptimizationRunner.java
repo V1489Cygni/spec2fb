@@ -4,12 +4,10 @@ import java.io.File;
 
 import ru.ifmo.optimization.AbstractOptimizationAlgorithm;
 import ru.ifmo.optimization.OptimizationAlgorithmCutoff;
-import ru.ifmo.optimization.algorithm.muaco.config.MuACOConfig;
 import ru.ifmo.optimization.algorithm.stats.RunStats;
 import ru.ifmo.optimization.instance.InstanceMetaData;
 import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
 import ru.ifmo.optimization.runner.config.OptimizationRunnerConfig;
-import ru.ifmo.random.RandomProvider;
 
 /**
  * 
@@ -33,7 +31,6 @@ public class OptimizationRunner {
 		File attemptsDir = new File(attemptsDirName);
 		attemptsDir.mkdir();
 		
-		RandomProvider.initialize(new MuACOConfig("muaco.properties").getNumberOfThreads() + 1, randomSeed);
 		for (int i = 0; i < config.numberOfExperiments(); i++) {
 			OptimizationAlgorithmCutoff.getInstance().setCutoff(config.getMaxEvalutions(), config.getMaxRunTime(), System.currentTimeMillis());
 			optimizationAlgorithm = config.getOptimizationAlgorithm(taskFactory);			

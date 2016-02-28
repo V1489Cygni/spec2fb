@@ -3,9 +3,9 @@ package ru.ifmo.optimization.algorithm.muaco.pathselector.roulette;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.algorithm.muaco.graph.Edge;
-import ru.ifmo.random.RandomProvider;
 
 public class SingleObjectiveRouletteEdgeSelector extends AbstractRouletteEdgeSelector {
 	
@@ -31,7 +31,7 @@ public class SingleObjectiveRouletteEdgeSelector extends AbstractRouletteEdgeSel
 			weight[i] = weight[i - 1] + 
 					Math.pow(edges.get(i).getPheromone(), alpha) * Math.pow(edges.get(i).getHeuristicDistance(), beta);
 		}
-		double p = weight[size - 1] * RandomProvider.getInstance().nextDouble();
+		double p = weight[size - 1] * ThreadLocalRandom.current().nextDouble();
 		int j = 0;
 
 		while (p > weight[j]) {

@@ -1,6 +1,7 @@
 package ru.ifmo.optimization.algorithm.muaco.parallel;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.algorithm.muaco.config.MuACOConfig;
 import ru.ifmo.optimization.algorithm.muaco.graph.Edge;
@@ -11,7 +12,6 @@ import ru.ifmo.optimization.instance.FitInstance;
 import ru.ifmo.optimization.instance.fsm.crossover.AbstractCrossover;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-import ru.ifmo.random.RandomProvider;
 
 public class CrossoverAndSharedBestMuACO<Instance extends Constructable<Instance>, 
 	MutationType extends InstanceMutation<Instance>> extends SharedBestMuACO<Instance, MutationType> {
@@ -53,9 +53,9 @@ public class CrossoverAndSharedBestMuACO<Instance extends Constructable<Instance
 		List<Node<Instance>> startNodes = super.getStartNodes();
 		
 		if (colonyIterationNumber > 0 && colonyIterationNumber % crossoverApplicationPeriod == 0) {
-			int i = RandomProvider.getInstance().nextInt(bestThreadInstances.length);
+			int i = ThreadLocalRandom.current().nextInt(bestThreadInstances.length);
 			while (i == id || bestThreadInstances[i] == null) {
-				i = RandomProvider.getInstance().nextInt(bestThreadInstances.length);
+				i = ThreadLocalRandom.current().nextInt(bestThreadInstances.length);
 			}
 
 			startNodes.remove(0);

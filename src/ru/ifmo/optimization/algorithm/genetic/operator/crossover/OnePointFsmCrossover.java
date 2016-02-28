@@ -3,9 +3,9 @@ package ru.ifmo.optimization.algorithm.genetic.operator.crossover;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.instance.fsm.FSM;
-import ru.ifmo.random.RandomProvider;
 
 public class OnePointFsmCrossover implements Crossover<FSM> {
 	
@@ -15,7 +15,7 @@ public class OnePointFsmCrossover implements Crossover<FSM> {
 		int numberOfEvents = parents.get(0).getNumberOfEvents();
 		List<String> events = parents.get(0).getEvents();
 		
-		int point = RandomProvider.getInstance().nextInt(parents.get(0).getNumberOfStates());
+		int point = ThreadLocalRandom.current().nextInt(parents.get(0).getNumberOfStates());
 		FSM.Transition[][] tr0 = new FSM.Transition[numberOfStates][numberOfEvents]; 
 		FSM.Transition[][] tr1 = new FSM.Transition[numberOfStates][numberOfEvents];
 		

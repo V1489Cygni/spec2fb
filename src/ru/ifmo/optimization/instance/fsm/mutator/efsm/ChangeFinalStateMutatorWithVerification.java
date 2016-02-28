@@ -1,17 +1,17 @@
 package ru.ifmo.optimization.instance.fsm.mutator.efsm;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
 import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
 import ru.ifmo.optimization.algorithm.muaco.mutator.MutatedInstanceMetaData;
 import ru.ifmo.optimization.instance.Mutator;
 import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmMutation;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmTransitionMutation;
-import ru.ifmo.random.RandomProvider;
 import ru.ifmo.util.Util;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class ChangeFinalStateMutatorWithVerification implements Mutator<FSM, FsmMutation> {
     private double probability;
@@ -58,7 +58,7 @@ public class ChangeFinalStateMutatorWithVerification implements Mutator<FSM, Fsm
         for (int i = 1; i < size; i++) {
             weight[i] = weight[i - 1] + list.get(i).weight;
         }
-        double p = weight[size - 1] * RandomProvider.getInstance().nextDouble();
+        double p = weight[size - 1] * ThreadLocalRandom.current().nextDouble();
         int j = 0;
 
         while (p > weight[j]) {
@@ -69,9 +69,9 @@ public class ChangeFinalStateMutatorWithVerification implements Mutator<FSM, Fsm
         int event = list.get(j).event;
 
         int currentEndState = mutated.transitions[state][event].getEndState();
-        int newState = RandomProvider.getInstance().nextInt(mutated.getNumberOfStates());
+        int newState = ThreadLocalRandom.current().nextInt(mutated.getNumberOfStates());
         while (newState == currentEndState) {
-            newState = RandomProvider.getInstance().nextInt(mutated.getNumberOfStates());
+            newState = ThreadLocalRandom.current().nextInt(mutated.getNumberOfStates());
         }
 
         mutated.transitions[state][event].setEndState(newState);

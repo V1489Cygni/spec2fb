@@ -1,5 +1,7 @@
 package ru.ifmo.optimization.algorithm.muaco.parallel;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import ru.ifmo.optimization.algorithm.muaco.MuACO;
 import ru.ifmo.optimization.algorithm.muaco.config.MuACOConfig;
 import ru.ifmo.optimization.instance.Constructable;
@@ -7,7 +9,6 @@ import ru.ifmo.optimization.instance.FitInstance;
 import ru.ifmo.optimization.instance.InstanceMetaData;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-import ru.ifmo.random.RandomProvider;
 
 public class SharedBestMuACO<Instance extends Constructable<Instance>, 
 	MutationType extends InstanceMutation<Instance>> extends MuACO<Instance, MutationType> {
@@ -45,12 +46,12 @@ public class SharedBestMuACO<Instance extends Constructable<Instance>,
 	
 	@Override
 	protected FitInstance<Instance> getInitialSolutionForRestart() {
-		if (RandomProvider.getInstance().nextBoolean()) {
+		if (ThreadLocalRandom.current().nextBoolean()) {
 			int i = id;
 			if (!restartWithBest) {
-				i = RandomProvider.getInstance().nextInt(bestThreadInstances.length);
+				i = ThreadLocalRandom.current().nextInt(bestThreadInstances.length);
 				while (i == id) {
-					i = RandomProvider.getInstance().nextInt(bestThreadInstances.length);
+					i = ThreadLocalRandom.current().nextInt(bestThreadInstances.length);
 				}
 			}
 			System.out.println("Algorithm " + id + " restarting with best solution of algorithm " + i);

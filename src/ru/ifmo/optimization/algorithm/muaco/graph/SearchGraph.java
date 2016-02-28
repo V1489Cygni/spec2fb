@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.algorithm.muaco.ant.AntStats;
 import ru.ifmo.optimization.algorithm.muaco.heuristicdist.HeuristicDistance;
@@ -20,7 +21,6 @@ import ru.ifmo.optimization.instance.FitInstance;
 import ru.ifmo.optimization.instance.fsm.CanonicalInstanceData;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.instance.mutation.MutationInstanceBuilder;
-import ru.ifmo.random.RandomProvider;
 import ru.ifmo.util.Pair;
 import ru.ifmo.util.Util;
 
@@ -105,7 +105,7 @@ public class SearchGraph<Instance extends Constructable<Instance>, MutationType 
 			return root;
 		}
 		nodes.addAll(nodesMap.values());
-		return nodes.get(RandomProvider.getInstance().nextInt(nodes.size()));
+		return nodes.get(ThreadLocalRandom.current().nextInt(nodes.size()));
 	}
 	
 	public void clear() {

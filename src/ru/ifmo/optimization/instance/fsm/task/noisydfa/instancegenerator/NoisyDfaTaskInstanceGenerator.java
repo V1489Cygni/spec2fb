@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.FSM.Transition;
@@ -13,7 +14,6 @@ import ru.ifmo.optimization.instance.fsm.task.tests.generator.TestsGenerator;
 import ru.ifmo.optimization.instance.fsm.task.tests.generator.config.TestGeneratorConfig;
 import ru.ifmo.optimization.instance.fsm.task.testswithlabelling.AutomatonTest;
 import ru.ifmo.optimization.instance.fsm.task.testswithlabelling.RandomFSMGeneratorForTests;
-import ru.ifmo.random.RandomProvider;
 
 public class NoisyDfaTaskInstanceGenerator extends TestsGenerator {
 	
@@ -24,7 +24,7 @@ public class NoisyDfaTaskInstanceGenerator extends TestsGenerator {
 		}
 		@Override
 		public int getTestLength() {
-			return RandomProvider.getInstance().nextInt(maxLength);
+			return ThreadLocalRandom.current().nextInt(maxLength);
 		};
 	}
 	
@@ -59,7 +59,7 @@ public class NoisyDfaTaskInstanceGenerator extends TestsGenerator {
 				actions, 1);
 		
 		for (int i = 0; i < fsm.getNumberOfStates(); i++) {
-			fsm.setStateTerminal(i, RandomProvider.getInstance().nextBoolean());
+			fsm.setStateTerminal(i, ThreadLocalRandom.current().nextBoolean());
 		}
 		
 		Set<Transition> visitedTransitions = new HashSet<Transition>();

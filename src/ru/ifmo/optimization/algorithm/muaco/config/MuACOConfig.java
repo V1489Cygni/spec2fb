@@ -1,15 +1,21 @@
 package ru.ifmo.optimization.algorithm.muaco.config;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+
 import ru.ifmo.optimization.algorithm.muaco.ant.AntStats;
 import ru.ifmo.optimization.algorithm.muaco.ant.config.AntConfig;
 import ru.ifmo.optimization.algorithm.muaco.ant.current.CurrentAntConfig;
 import ru.ifmo.optimization.algorithm.muaco.ant.current.CurrentAntFactory;
 import ru.ifmo.optimization.algorithm.muaco.ant.factory.AntFactory;
-import ru.ifmo.optimization.algorithm.muaco.ant.stupidparallel.StupidParallelAntFactory;
 import ru.ifmo.optimization.algorithm.muaco.colony.consecutive.ConsecutiveAntColonyFactory;
 import ru.ifmo.optimization.algorithm.muaco.colony.factory.AntColonyFactory;
 import ru.ifmo.optimization.algorithm.muaco.colony.stepbystep.StepByStepAntColonyFactory;
-import ru.ifmo.optimization.algorithm.muaco.colony.stupidparallel.StupidParallelAntColonyFactory;
 import ru.ifmo.optimization.algorithm.muaco.graph.SearchGraph;
 import ru.ifmo.optimization.algorithm.muaco.graph.fsm.canonical.ConstructionGraphWithActiveCanonicalCache;
 import ru.ifmo.optimization.algorithm.muaco.graph.fsm.canonical.PassiveCanonicalConstructionGraph;
@@ -17,15 +23,18 @@ import ru.ifmo.optimization.algorithm.muaco.heuristicdist.DestinationFitnessHeur
 import ru.ifmo.optimization.algorithm.muaco.heuristicdist.FitnessDifferenceHeuristicDistance;
 import ru.ifmo.optimization.algorithm.muaco.heuristicdist.HeuristicDistance;
 import ru.ifmo.optimization.algorithm.muaco.heuristicdist.NoneHeuristicDistance;
-import ru.ifmo.optimization.algorithm.muaco.parallel.InteractingAlgorithm;
 import ru.ifmo.optimization.algorithm.muaco.pathselector.AbstractPathSelector;
 import ru.ifmo.optimization.algorithm.muaco.pathselector.AntColonySystemPathSelector;
 import ru.ifmo.optimization.algorithm.muaco.pathselector.HeuristicAntPathSelector;
 import ru.ifmo.optimization.algorithm.muaco.pathselector.config.PathSelectorConfig;
-import ru.ifmo.optimization.algorithm.muaco.pathselector.stupidparallel.StupidParallelPathSelector;
 import ru.ifmo.optimization.algorithm.muaco.pheromoneupdater.PheromoneUpdater;
 import ru.ifmo.optimization.algorithm.muaco.pheromoneupdater.current.GlobalElitistMinBoundPheromoneUpdater;
-import ru.ifmo.optimization.algorithm.muaco.startnodesselector.*;
+import ru.ifmo.optimization.algorithm.muaco.startnodesselector.BestNodeStartNodesSelector;
+import ru.ifmo.optimization.algorithm.muaco.startnodesselector.BestPathStartNodesSelector;
+import ru.ifmo.optimization.algorithm.muaco.startnodesselector.GlobalRouletteStartNodesSelector;
+import ru.ifmo.optimization.algorithm.muaco.startnodesselector.RandomStartNodesSelector;
+import ru.ifmo.optimization.algorithm.muaco.startnodesselector.RootStartNodeSelector;
+import ru.ifmo.optimization.algorithm.muaco.startnodesselector.StartNodesSelector;
 import ru.ifmo.optimization.instance.Constructable;
 import ru.ifmo.optimization.instance.FitInstance;
 import ru.ifmo.optimization.instance.InstanceGenerator;
@@ -44,23 +53,18 @@ import ru.ifmo.optimization.instance.fsm.mutator.LucasReynoldsMutator;
 import ru.ifmo.optimization.instance.fsm.mutator.efsm.ChangeFinalStateMutatorWithVerification;
 import ru.ifmo.optimization.instance.fsm.mutator.efsm.EFSMAddOrDeleteTransitionMutator;
 import ru.ifmo.optimization.instance.fsm.task.AbstractAutomatonTask;
-import ru.ifmo.optimization.instance.multimaskefsm.CounterExampleMutator;
 import ru.ifmo.optimization.instance.multimaskefsm.RandomMultiMaskEfsmGenerator;
 import ru.ifmo.optimization.instance.multimaskefsm.mutator.ChangeMeaningfulPredicatesMutator;
+import ru.ifmo.optimization.instance.multimaskefsm.mutator.ChangeNumberOfActionsMutator;
+import ru.ifmo.optimization.instance.multimaskefsm.mutator.CounterExampleMutator;
 import ru.ifmo.optimization.instance.multimaskefsm.mutator.DestinationStateMutator;
 import ru.ifmo.optimization.instance.multimaskefsm.mutator.FBDKAddDeleteTransitionMutator;
 import ru.ifmo.optimization.instance.multimaskefsm.mutator.MaskMutator;
+import ru.ifmo.optimization.instance.multimaskefsm.mutator.OldCounterExampleMutator;
+import ru.ifmo.optimization.instance.multimaskefsm.mutator.SetFixedActionIdMutator;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.runner.config.OptimizationRunnerConfig.InstanceType;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
 
 public class MuACOConfig<Instance extends Constructable<Instance>, MutationType extends InstanceMutation<Instance>> {
 
@@ -195,14 +199,26 @@ public class MuACOConfig<Instance extends Constructable<Instance>, MutationType 
                     mutators.add(new MaskMutator(Double.parseDouble(properties.getProperty("FBDK_MASK.p", "-1"))));
                     break;
                 case FBDK_ADD_DELETE_TRANSITIONS:
-                    mutators.add(new FBDKAddDeleteTransitionMutator(Double.parseDouble(properties.getProperty("FBDK_ADD_DELETE_TRANSITIONS.p", "-1"))));
+                    mutators.add(new FBDKAddDeleteTransitionMutator(Double.parseDouble(properties.getProperty("FBDK_ADD_DELETE_TRANSITIONS.p", "-1")), 
+                    		Double.parseDouble(properties.getProperty("add-delete-transition-probability", "0.05"))));
                     break;
                 case CHANGE_PREDICATES:
                     mutators.add(new ChangeMeaningfulPredicatesMutator(Double.parseDouble(properties.getProperty("CHANGE_PREDICATES.p", "-1"))));
                     break;
                 case FBDK_COUNTEREXAMPLE:
-                    mutators.add(new CounterExampleMutator(Integer.parseInt(properties.getProperty("FBDK_COUNTEREXAMPLE.lambda"))));
+                    mutators.add(new CounterExampleMutator(Integer.parseInt(properties.getProperty("FBDK_COUNTEREXAMPLE.lambda")), 
+                    		Double.parseDouble(properties.getProperty("FBDK_COUNTEREXAMPLE.p"))));
                     break;
+                case FBDK_OLD_COUNTEREXAMPLE:
+                    mutators.add(new OldCounterExampleMutator(Integer.parseInt(properties.getProperty("FBDK_OLD_COUNTEREXAMPLE.lambda"))));
+                    break;
+                    
+                case FBDK_CHANGE_NUMBER_OF_ACTIONS:
+                	mutators.add(new ChangeNumberOfActionsMutator(Double.parseDouble(properties.getProperty("FBDK_CHANGE_NUMBER_OF_ACTIONS.p", "-1"))));
+                	break;
+                case FBDK_SET_FIXED_ACTION_ID:
+                	mutators.add(new SetFixedActionIdMutator(Double.parseDouble(properties.getProperty("FBDK_SET_FIXED_ACTION_ID.p", "-1"))));
+                	break;
             }
         }
         return mutators;
@@ -220,21 +236,9 @@ public class MuACOConfig<Instance extends Constructable<Instance>, MutationType 
             case HEURISTIC:
                 return new HeuristicAntPathSelector(task, getFsmMutators(task),
                         new PathSelectorConfig("heuristic-path-selector.properties"), antStats);
-//		case PASSIVE_CANONICAL_HEURISTIC:
-//			return (AbstractPathSelector<Instance, MutationType>) new PassiveCanonicalHeuristicAntPathSelector(
-//					(AbstractOptimizationTask<FSM>)task, getFsmMutators(task), new PathSelectorConfig("heuristic-path-selector.properties"), antStats);
-//		case ACTIVE_CANONICAL_HEURISTIC:
-//			return (AbstractPathSelector<Instance, MutationType>) new ActiveCanonicalHeuristicAntPathSelector((AbstractOptimizationTask<FSM>)task, getFsmMutators(task),
-//					new PathSelectorConfig("heuristic-path-selector.properties"), antStats);
             case ACO_SYSTEM:
                 return new AntColonySystemPathSelector(task, getFsmMutators(task),
                         new PathSelectorConfig("acs-path-selector.properties"), antStats);
-//		case LAZY_PASSIVE_CANONICAL_HEURISTIC:
-//			return (AbstractPathSelector<Instance, MutationType>) new LazyPassiveCanonicalHeuristicAntPathSelector((AbstractOptimizationTask<FSM>)task, getFsmMutators(task),
-//					new PathSelectorConfig("heuristic-path-selector.properties"), antStats);
-            case STUPID_PARALLEL:
-                return new StupidParallelPathSelector(task, getFsmMutators(task),
-                        new PathSelectorConfig("heuristic-path-selector.properties"), antStats);
         }
         return null;
     }
@@ -280,9 +284,6 @@ public class MuACOConfig<Instance extends Constructable<Instance>, MutationType 
             case CURRENT:
                 antConfig = new CurrentAntConfig(pathSelector, null);
                 return new CurrentAntFactory<Instance, MutationType>(antConfig, task, getPheromoneUpdater(task));
-            case PARALLEL:
-                antConfig = new CurrentAntConfig(pathSelector, null);
-                return new StupidParallelAntFactory<Instance, MutationType>(antConfig, task, getPheromoneUpdater(task));
         }
 
         return null;
@@ -299,8 +300,6 @@ public class MuACOConfig<Instance extends Constructable<Instance>, MutationType 
         switch (type) {
             case CURRENT:
                 return new CurrentAntFactory<Instance, MutationType>(antConfig, task, getPheromoneUpdater(task));
-            case PARALLEL:
-                return new StupidParallelAntFactory<Instance, MutationType>(antConfig, task, getPheromoneUpdater(task));
         }
 
         return null;
@@ -319,8 +318,6 @@ public class MuACOConfig<Instance extends Constructable<Instance>, MutationType 
                 return new ConsecutiveAntColonyFactory();
             case STEP_BY_STEP:
                 return new StepByStepAntColonyFactory();
-            case PARALLEL:
-                return new StupidParallelAntColonyFactory(getNumberOfThreads());
         }
 
         return null;
@@ -452,8 +449,11 @@ public class MuACOConfig<Instance extends Constructable<Instance>, MutationType 
         FBDK_ADD_DELETE_TRANSITIONS,
         FBDK_MAKE_VARIABLE_UNIMPORTANT,
         FBDK_COUNTEREXAMPLE,
+        FBDK_OLD_COUNTEREXAMPLE,
         CHANGE_TRAN_GROUPS_ORDER,
-        CHANGE_PREDICATES
+        CHANGE_PREDICATES,
+        FBDK_CHANGE_NUMBER_OF_ACTIONS,
+        FBDK_SET_FIXED_ACTION_ID
     }
 
     private static enum PathSelectorType {
@@ -467,7 +467,6 @@ public class MuACOConfig<Instance extends Constructable<Instance>, MutationType 
         BOUNDED_FIRST_ASCENT,
         LAZY_PASSIVE_CANONICAL_HEURISTIC,
         MULTIOBJECTIVE,
-        STUPID_PARALLEL,
         SHARED_GET
     }
 

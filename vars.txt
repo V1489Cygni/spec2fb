@@ -3,7 +3,6 @@ VAR p1 : boolean;
 VAR p2 : boolean;
 VAR p3 : boolean;
 VAR st1 : { s1, s2, s3, s4 };
-VAR vst : { v1, v2, v3, v4, v5, v6 };
 
 DEFINE vp1 := c1End & c2Home & vcEnd & vs & pp1;
 DEFINE vp2 := c1Home & c2End & vcEnd & vs & pp2;

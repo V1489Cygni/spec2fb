@@ -1,20 +1,28 @@
 package ru.ifmo.optimization.instance.multimaskefsm;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 
 public class State implements Serializable {
+	private int numberOfOutputActions;
     private TransitionGroup[][] transitionGroups;
+    private int[] fixedActionId;
 
     public State() {
+    	numberOfOutputActions = 1;//MultiMaskEfsmSkeleton.MAX_OUTPUT_ACTION_COUNT;
         transitionGroups = new TransitionGroup[MultiMaskEfsmSkeleton.INPUT_EVENT_COUNT][MultiMaskEfsmSkeleton.TRANSITION_GROUPS_COUNT];
-//		for (int i = 0; i < transitionGroups.length; i++) {
-//			transitionGroups[i] = new TransitionGroup();
-//		}
+        fixedActionId = new int[numberOfOutputActions];
+        Arrays.fill(fixedActionId, -1);
     }
 
     public State(State other) {
+    	numberOfOutputActions = other.numberOfOutputActions;
         transitionGroups = new TransitionGroup[other.transitionGroups.length][other.transitionGroups[0].length];
         for (int i = 0; i < transitionGroups.length; i++) {
             transitionGroups[i] = new TransitionGroup[other.transitionGroups[i].length];
@@ -22,6 +30,38 @@ public class State implements Serializable {
                 transitionGroups[i][j] = new TransitionGroup(other.transitionGroups[i][j]);
             }
         }
+        fixedActionId = Arrays.copyOf(other.fixedActionId, other.fixedActionId.length); 
+    }
+    
+    public void setFixedActionId(int actionNumber, int actionId) {
+    	if (actionNumber < numberOfOutputActions) {
+    		fixedActionId[actionNumber] = actionId;
+    	}
+    }
+    
+    public int getFixedActionId(int actionNumber) {
+    	if (actionNumber >= numberOfOutputActions) {
+    		return -1;
+    	}
+    	return fixedActionId[actionNumber];
+    }
+    
+    public int getNumberOfOutputActions() {
+    	return numberOfOutputActions;
+    }
+    
+    public void setNumberOfOutputActions(int numberOfOutputActions) {
+    	this.numberOfOutputActions = numberOfOutputActions;
+    	int[] tmp = new int[numberOfOutputActions];
+    	for (int i = 0; i < Math.min(tmp.length, fixedActionId.length); i++) {
+    		tmp[i] = fixedActionId[i];
+    	}
+    	if (tmp.length > fixedActionId.length) {
+    		for (int i = Math.min(tmp.length, fixedActionId.length); i < tmp.length; i++) {
+    			tmp[i] = -1;
+    		}
+    	}
+    	fixedActionId = Arrays.copyOf(tmp, tmp.length);
     }
 
     public void addTransitionGroup(String inputEvent, TransitionGroup tg) {
@@ -122,6 +162,10 @@ public class State implements Serializable {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        sb.append(numberOfOutputActions);
+        for (int i : fixedActionId) {
+        	sb.append(i);
+        }
         for (TransitionGroup[] eventTransitionGroups : transitionGroups) {
             for (TransitionGroup tg : eventTransitionGroups) {
                 sb.append(tg);

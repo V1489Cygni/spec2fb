@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.instance.FitInstance;
 import ru.ifmo.optimization.instance.Mutator;
@@ -18,7 +19,6 @@ import ru.ifmo.optimization.instance.fsm.task.AbstractAutomatonTask;
 import ru.ifmo.optimization.instance.fsm.task.factory.FsmTaskFactory;
 import ru.ifmo.optimization.instance.task.AbstractTaskConfig;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-import ru.ifmo.random.RandomProvider;
 
 public class FitnessCloudGenerator implements Runnable {
 	private AbstractOptimizationTask<FSM> task;
@@ -54,7 +54,7 @@ public class FitnessCloudGenerator implements Runnable {
 		while (samples.size() < size) {
 			FitInstance<FSM> sample = applyFitness(createRandomFSM());
 			
-			double u = RandomProvider.getInstance().nextDouble();
+			double u = ThreadLocalRandom.current().nextDouble();
 			if (u <= alpha(samples.get(samples.size() - 1), sample)) {
 				samples.add(sample);
 			}
@@ -63,7 +63,7 @@ public class FitnessCloudGenerator implements Runnable {
 	}
 	
 	private FitInstance<FSM> mutateInstance(FSM fsm) {
-		return applyFitness(mutators.get(RandomProvider.getInstance().nextInt(mutators.size())).applySimple(fsm));
+		return applyFitness(mutators.get(ThreadLocalRandom.current().nextInt(mutators.size())).applySimple(fsm));
 	}
 	
 	public FitInstance<FSM> rhouletteWheelSelection(List<FitInstance<FSM>> fsms) {
@@ -75,7 +75,7 @@ public class FitnessCloudGenerator implements Runnable {
 		for (int i = 1; i < size; i++) {
 			weight[i] = weight[i - 1] + fsms.get(i).getFitness();
 		}
-		double p = weight[size - 1] * RandomProvider.getInstance().nextDouble();
+		double p = weight[size - 1] * ThreadLocalRandom.current().nextDouble();
 		int j = 0;
 
 		while (p > weight[j]) {

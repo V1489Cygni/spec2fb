@@ -6,11 +6,11 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.InitialFSMGenerator;
 import ru.ifmo.optimization.instance.fsm.task.AutomatonTaskConstraints;
-import ru.ifmo.random.RandomProvider;
 
 public class RandomDfaGenerator implements Runnable {
 	private int numberOfStates;
@@ -70,7 +70,7 @@ public class RandomDfaGenerator implements Runnable {
 
 		//randomly assign class labels to states 
 		for (int i = 0; i < dfa.getNumberOfStates(); i++) {
-			dfa.setStateTerminal(i, RandomProvider.getInstance().nextBoolean());
+			dfa.setStateTerminal(i, ThreadLocalRandom.current().nextBoolean());
 		}
 		
 		dfa.printTransitionDiagram("target-dfa.transitions");
@@ -96,16 +96,18 @@ public class RandomDfaGenerator implements Runnable {
 		boolean[] training = new boolean[strings.size()];
 		Arrays.fill(training, false);
 		
+		ThreadLocalRandom random = ThreadLocalRandom.current();
+		
 		int trainingSetSize = (int)(strings.size() * density);
 		int testSetSize = strings.size() - trainingSetSize;
 		trainingSet.println(trainingSetSize + " " + 2);
 		for (int i = 0; i < trainingSetSize; i++) {			
-			int id = RandomProvider.getInstance().nextInt(strings.size());
+			int id = random.nextInt(strings.size());
 			while (training[id]) {
-				id = RandomProvider.getInstance().nextInt(strings.size());
+				id = random.nextInt(strings.size());
 			}
 			training[id] = true;
-			boolean flipLabel = RandomProvider.getInstance().nextDouble() < noiseLevel;
+			boolean flipLabel = random.nextDouble() < noiseLevel;
 			printString(dfa, strings.get(id), trainingSet, flipLabel);
 		}
 		

@@ -1,6 +1,7 @@
 package ru.ifmo.optimization.algorithm.muaco.pathselector;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.algorithm.muaco.ant.AntStats;
 import ru.ifmo.optimization.algorithm.muaco.graph.Edge;
@@ -11,7 +12,6 @@ import ru.ifmo.optimization.instance.Constructable;
 import ru.ifmo.optimization.instance.Mutator;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-import ru.ifmo.random.RandomProvider;
 import ru.ifmo.util.Pair;
 
 public class AntColonySystemPathSelector<Instance extends Constructable<Instance>, MutationType extends InstanceMutation<Instance>>
@@ -36,7 +36,7 @@ public class AntColonySystemPathSelector<Instance extends Constructable<Instance
 		if (result.first == null || result.second == null) {
 			return result;
 		}
-		if (RandomProvider.getInstance().nextDouble() < greedyChoiceProbability) {
+		if (ThreadLocalRandom.current().nextDouble() < greedyChoiceProbability) {
 			double mutationFitness = result.first.getDest().getFitness();
 			Edge bestChild = node.getBestChild();
 			if (bestChild.getDest().getFitness() > mutationFitness) {

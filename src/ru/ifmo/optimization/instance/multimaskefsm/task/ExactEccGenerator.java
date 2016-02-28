@@ -18,27 +18,27 @@ public class ExactEccGenerator {
         alg:
         for (OutputAction outputAction : possibleAlgorithms) {
             for (VarsActionsScenario s : scenarios) {
-                if (!applyMask(s.get(0).getActions(), outputAction.getAlgorithm()).equals(s.get(1).getActions())) {
-                    continue alg;
-                }
+//                if (!applyMask(s.get(0).getActions(), outputAction.getAlgorithm()).equals(s.get(1).getActions())) {
+//                    continue alg;
+//                }
             }
             return outputAction;
         }
         return null;
     }
 
-    private OutputAction getBestPossibleAlgorithm(ScenarioElement first, ScenarioElement second, Collection<OutputAction> possibleAlgorithms) {
+    private OutputAction getBestPossibleAlgorithm(OutputAction first, OutputAction second, Collection<OutputAction> possibleAlgorithms) {
         for (OutputAction outputAction : possibleAlgorithms) {
-            if (applyMask(first.getActions(), outputAction.getAlgorithm()).equals(second.getActions())) {
+            if (applyMask(first.getAlgorithm(), outputAction.getAlgorithm()).equals(second.getAlgorithm())) {
                 return outputAction;
             }
         }
         throw new RuntimeException();
     }
-
-    private OutputAction getPossibleAlgorithm(ScenarioElement first, ScenarioElement second) {
-        String actions1 = first.getActions();
-        String actions2 = second.getActions();
+    
+    public static OutputAction getPossibleAlgorithm(OutputAction first, OutputAction second) {
+        String actions1 = first.getAlgorithm();
+        String actions2 = second.getAlgorithm();
         StringBuilder possibleAlgorithm = new StringBuilder();
         for (int j = 0; j < actions1.length(); j++) {
             if (actions1.charAt(j) == '0' && actions2.charAt(j) == '1') {
@@ -52,47 +52,62 @@ public class ExactEccGenerator {
         return new OutputAction(possibleAlgorithm.toString(), second.getOutputEvent());
     }
 
+
+    private Set<OutputAction> getPossibleAlgorithms(ScenarioElement first, ScenarioElement second) {
+    	Set<OutputAction> result = new HashSet<OutputAction>();
+    	for (int i = 0; i < first.getActionsCount() - 1; i++) {
+    		result.add(getPossibleAlgorithm(first.getAction(i), first.getAction(i + 1)));
+    	}
+    	result.add(getPossibleAlgorithm(first.getLastAction(), second.getAction(0)));
+    	
+    	for (int i = 0; i < second.getActionsCount() - 1; i++) {
+    		result.add(getPossibleAlgorithm(second.getAction(i), second.getAction(i + 1)));
+    	}
+    	
+    	return result;
+    }
+
+    private List<OutputAction> getPossibleAlgorithms(VarsActionsScenario[] scenarios, Set<OutputAction> algorithms) {
+    	 List<OutputAction> mergeCandidates = new ArrayList<OutputAction>();
+         mergeCandidates.addAll(algorithms);
+
+         while (true) {
+             boolean somethingChanged = false;
+             loop:
+             for (int i = 0; i < mergeCandidates.size(); i++) {
+                 for (int j = 0; j < mergeCandidates.size(); j++) {
+                     if (i == j) {
+                         continue;
+                     }
+                     OutputAction firstCandidate = mergeCandidates.get(i);
+                     OutputAction secondCandidate = mergeCandidates.get(j);
+                     OutputAction merged = getMergedAlgorithm(firstCandidate, secondCandidate);
+                     if (canMergeAlgorithms(firstCandidate, secondCandidate, scenarios, mergeCandidates)) {
+                         mergeCandidates.remove(firstCandidate);
+                         mergeCandidates.remove(secondCandidate);
+                         mergeCandidates.add(merged);
+                         somethingChanged = true;
+                         break loop;
+                     }
+                 }
+             }
+             if (!somethingChanged) {
+                 break;
+             }
+         }
+         return mergeCandidates;
+    }
+    
     private List<OutputAction> getPossibleAlgorithms(VarsActionsScenario[] scenarios) {
         Set<OutputAction> algorithms = new HashSet<OutputAction>();
         for (VarsActionsScenario s : scenarios) {
             for (int i = 0; i < s.size() - 1; i++) {
-                if (s.get(i + 1).getOutputEvent().isEmpty()) {
-                    continue;
-                }
-                OutputAction possibleAlgorithm = getPossibleAlgorithm(s.get(i), s.get(i + 1));
-                algorithms.add(possibleAlgorithm);
-                System.out.println(possibleAlgorithm.getAlgorithm());
+                Set<OutputAction> possibleAlgorithms = getPossibleAlgorithms(s.get(i), s.get(i + 1));
+                algorithms.addAll(possibleAlgorithms);
             }
         }
 
-        List<OutputAction> mergeCandidates = new ArrayList<OutputAction>();
-        mergeCandidates.addAll(algorithms);
-
-        while (true) {
-            boolean somethingChanged = false;
-            loop:
-            for (int i = 0; i < mergeCandidates.size(); i++) {
-                for (int j = 0; j < mergeCandidates.size(); j++) {
-                    if (i == j) {
-                        continue;
-                    }
-                    OutputAction firstCandidate = mergeCandidates.get(i);
-                    OutputAction secondCandidate = mergeCandidates.get(j);
-                    OutputAction merged = getMergedAlgorithm(firstCandidate, secondCandidate);
-                    if (canMergeAlgorithms(firstCandidate, secondCandidate, scenarios, mergeCandidates)) {
-                        mergeCandidates.remove(firstCandidate);
-                        mergeCandidates.remove(secondCandidate);
-                        mergeCandidates.add(merged);
-                        somethingChanged = true;
-                        break loop;
-                    }
-                }
-            }
-            if (!somethingChanged) {
-                break;
-            }
-        }
-        return mergeCandidates;
+        return getPossibleAlgorithms(scenarios, algorithms); 
     }
 
     private OutputAction getMergedAlgorithm(OutputAction first, OutputAction second) {
@@ -114,6 +129,13 @@ public class ExactEccGenerator {
 
         return new OutputAction(mergedSb.toString(), first.getOutputEvent());
     }
+    
+    private List<OutputAction> getActionsSequence(ScenarioElement first, ScenarioElement second) {
+    	List<OutputAction> result = new ArrayList<OutputAction>();
+    	result.addAll(first.getActions());
+    	result.addAll(second.getActions());
+    	return result;
+    }
 
     private boolean canMergeAlgorithms(OutputAction first, OutputAction second, VarsActionsScenario[] scenarios, List<OutputAction> mergeCandidates) {
         if (!first.getOutputEvent().equals(second.getOutputEvent())) {
@@ -133,21 +155,26 @@ public class ExactEccGenerator {
         }
         for (VarsActionsScenario s : scenarios) {
             for (int i = 0; i < s.size() - 1; i++) {
-                OutputAction possibleAlgorithm = getBestPossibleAlgorithm(s.get(i), s.get(i + 1), mergeCandidates);
-                String currentActions = s.get(i).getActions();
-                String mergedResult = applyMask(currentActions, merged.getAlgorithm());
+            	List<OutputAction> sequence = getActionsSequence(s.get(i), s.get(i + 1));
+            	for (int j = 0; j < sequence.size() - 1; j++) {
 
-                if (possibleAlgorithm.getAlgorithm().equals(alg1)) {
-                    String alg1Result = applyMask(currentActions, alg1);
-                    if (!alg1Result.equals(mergedResult)) {
-                        return false;
-                    }
-                } else if (possibleAlgorithm.getAlgorithm().equals(alg2)) {
-                    String alg2Result = applyMask(currentActions, alg2);
-                    if (!alg2Result.equals(mergedResult)) {
-                        return false;
-                    }
-                }
+            		OutputAction possibleAlgorithm = getBestPossibleAlgorithm(sequence.get(j), sequence.get(j + 1), mergeCandidates);
+            		OutputAction currentActions = sequence.get(j);
+            		String mergedResult = applyMask(currentActions.getAlgorithm(), merged.getAlgorithm());
+
+            		if (possibleAlgorithm.getAlgorithm().equals(alg1)) {
+            			String alg1Result = applyMask(currentActions.getAlgorithm(), alg1);
+            			if (!alg1Result.equals(mergedResult)) {
+            				return false;
+            			}
+            		} else if (possibleAlgorithm.getAlgorithm().equals(alg2)) {
+            			String alg2Result = applyMask(currentActions.getAlgorithm(), alg2);
+            			if (!alg2Result.equals(mergedResult)) {
+            				return false;
+            			}
+            		}
+            	}
+
             }
         }
         return true;
@@ -201,8 +228,8 @@ public class ExactEccGenerator {
     }
 
     private void constructSolution(AbstractTaskConfig config) {
-        VarsActionsScenario[] scenarios = EccUtils.readScenarios(config.getProperty("scenarios"));
-        scenarios = removeScenarioNondeterminism(scenarios);
+        VarsActionsScenario[] scenarios = EccUtils.readScenarios(config.getProperty("scenarios"), Integer.MAX_VALUE);
+//        scenarios = removeScenarioNondeterminism(scenarios);
         EccUtils.readPredicateNames(config.getProperty("predicate-names"));
         MultiMaskEfsmSkeleton.STATE_COUNT = Integer.parseInt(config.getProperty("desired-number-of-states"));
         MultiMaskEfsmSkeleton.MEANINGFUL_PREDICATES_COUNT = Integer.parseInt(config.getProperty("meaningful-predicates-count"));
@@ -214,7 +241,7 @@ public class ExactEccGenerator {
         for (OutputAction s : possibleAlgorithms) {
             System.out.println(s);
         }
-
+        
         List<OutputAction> usedAlgorithms = new ArrayList<OutputAction>();
         Set<Tran>[] transitionsExist = new HashSet[possibleAlgorithms.size()];
         List<Tran>[] transitions = new ArrayList[possibleAlgorithms.size()];
@@ -234,7 +261,7 @@ public class ExactEccGenerator {
                     continue;
                 }
 
-                OutputAction algorithm = getBestPossibleAlgorithm(s.get(i), s.get(i + 1), possibleAlgorithms);
+                OutputAction algorithm = null;//getBestPossibleAlgorithm(s.get(i), s.get(i + 1), possibleAlgorithms);
                 int newState = usedAlgorithms.indexOf(algorithm);
                 if (newState == -1) {
                     usedAlgorithms.add(algorithm);
@@ -297,9 +324,9 @@ public class ExactEccGenerator {
 
         MultiMaskEfsmSkeleton skeleton = new MultiMaskEfsmSkeleton(states);
         MultiMaskEfsm result = new MultiMaskEfsm(skeleton);
-        for (int i = 0; i < usedAlgorithms.size(); i++) {
-            result.setActions(i, usedAlgorithms.get(i));
-        }
+//        for (int i = 0; i < usedAlgorithms.size(); i++) {
+//            result.setActions(i, usedAlgorithms.get(i));
+//        }
 
         MultiMaskTask task = new MultiMaskTask(config);
         MultiMaskEfsmSkeleton.STATE_COUNT = states.length;
@@ -317,7 +344,41 @@ public class ExactEccGenerator {
     public void run() {
         constructSolution(new AbstractTaskConfig("new-fbdk.properties"));
     }
+    
+    public List<OutputAction> calculateActions() {
+    	AbstractTaskConfig config = new AbstractTaskConfig("new-fbdk.properties");
+    	VarsActionsScenario[] scenarios = EccUtils.readScenarios(config.getProperty("scenarios"), Integer.MAX_VALUE);
+    	EccUtils.readPredicateNames(config.getProperty("predicate-names"));
+    	MultiMaskEfsmSkeleton.STATE_COUNT = Integer.parseInt(config.getProperty("desired-number-of-states"));
+    	MultiMaskEfsmSkeleton.MEANINGFUL_PREDICATES_COUNT = Integer.parseInt(config.getProperty("meaningful-predicates-count"));
+    	MultiMaskEfsmSkeleton.TRANSITION_GROUPS_COUNT = Integer.parseInt(config.getProperty("transition-groups-count"));
+    	MultiMaskEfsmSkeleton.PREDICATE_COUNT = MultiMaskEfsmSkeleton.PREDICATE_NAMES.size();
 
+    	List<OutputAction> possibleAlgorithms = getPossibleAlgorithms(scenarios);
+    	System.out.println(possibleAlgorithms.size());
+    	for (OutputAction s : possibleAlgorithms) {
+    		System.out.println(s);
+    	}
+    	return possibleAlgorithms;
+    }
+    
+    public List<OutputAction> calculateActions(VarsActionsScenario[] scenarios) {
+//    	AbstractTaskConfig config = new AbstractTaskConfig("new-fbdk.properties");
+//    	VarsActionsScenario[] scenarios = EccUtils.readScenarios(config.getProperty("scenarios"), Integer.MAX_VALUE);
+//    	EccUtils.readPredicateNames(config.getProperty("predicate-names"));
+//    	MultiMaskEfsmSkeleton.STATE_COUNT = Integer.parseInt(config.getProperty("desired-number-of-states"));
+//    	MultiMaskEfsmSkeleton.MEANINGFUL_PREDICATES_COUNT = Integer.parseInt(config.getProperty("meaningful-predicates-count"));
+//    	MultiMaskEfsmSkeleton.TRANSITION_GROUPS_COUNT = Integer.parseInt(config.getProperty("transition-groups-count"));
+//    	MultiMaskEfsmSkeleton.PREDICATE_COUNT = MultiMaskEfsmSkeleton.PREDICATE_NAMES.size();
+
+    	List<OutputAction> possibleAlgorithms = getPossibleAlgorithms(scenarios);
+    	System.out.println(possibleAlgorithms.size());
+    	for (OutputAction s : possibleAlgorithms) {
+    		System.out.println(s);
+    	}
+    	return possibleAlgorithms;
+    }
+    
     private class Tran {
         private String inputEvent;
         private String label;

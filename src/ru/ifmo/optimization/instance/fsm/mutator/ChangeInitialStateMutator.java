@@ -1,12 +1,13 @@
 package ru.ifmo.optimization.instance.fsm.mutator;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
 import ru.ifmo.optimization.algorithm.muaco.mutator.MutatedInstanceMetaData;
 import ru.ifmo.optimization.instance.Mutator;
 import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmInitialStateMutation;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmMutation;
-import ru.ifmo.random.RandomProvider;
 
 public class ChangeInitialStateMutator implements Mutator<FSM, FsmMutation> {
 
@@ -18,9 +19,9 @@ public class ChangeInitialStateMutator implements Mutator<FSM, FsmMutation> {
 	
 	@Override
 	public MutatedInstanceMetaData<FSM, FsmMutation> apply(FSM instance) {
-		int newInitialState = RandomProvider.getInstance().nextInt(instance.getNumberOfStates());
+		int newInitialState = ThreadLocalRandom.current().nextInt(instance.getNumberOfStates());
 		while (newInitialState == instance.getInitialState()) {
-			newInitialState = RandomProvider.getInstance().nextInt(instance.getNumberOfStates());
+			newInitialState = ThreadLocalRandom.current().nextInt(instance.getNumberOfStates());
 		}
 		FsmInitialStateMutation mutation = new FsmInitialStateMutation(newInitialState);
 		return new MutatedInstanceMetaData<FSM, FsmMutation>(instance, new MutationCollection<FsmMutation>(mutation));

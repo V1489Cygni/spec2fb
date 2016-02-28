@@ -1,12 +1,18 @@
-package ru.ifmo.optimization.instance.multimaskefsm;
+package ru.ifmo.optimization.instance.multimaskefsm.mutator;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
 import ru.ifmo.optimization.algorithm.muaco.mutator.MutatedInstanceMetaData;
 import ru.ifmo.optimization.instance.Mutator;
+import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskEfsmSkeleton;
+import ru.ifmo.optimization.instance.multimaskefsm.TransitionGroup;
 import ru.ifmo.optimization.instance.multimaskefsm.mutation.DestinationStateMutation;
 import ru.ifmo.optimization.instance.multimaskefsm.mutation.MultiMaskEfsmMutation;
 import ru.ifmo.optimization.instance.multimaskefsm.task.ScenarioElement;
@@ -14,37 +20,50 @@ import ru.ifmo.optimization.instance.multimaskefsm.task.VarsActionsScenario;
 
 public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, MultiMaskEfsmMutation> {
     private final int lambda;
+    private double probability;
 
-    public CounterExampleMutator(int lambda) {
+    public CounterExampleMutator(int lambda, double probability) {
         this.lambda = lambda;
+        this.probability = probability;
     }
 
     @Override
     public MutatedInstanceMetaData<MultiMaskEfsmSkeleton, MultiMaskEfsmMutation> apply(MultiMaskEfsmSkeleton individual) {
-        List<Step> transitions = getTransitions(individual);
+        Set<Step> transitions = new HashSet<>();
+        transitions.addAll(getTransitions(individual));
         if (transitions.isEmpty()) {
             return new MutatedInstanceMetaData<MultiMaskEfsmSkeleton, MultiMaskEfsmMutation>(
             		new MultiMaskEfsmSkeleton(individual), new MutationCollection<MultiMaskEfsmMutation>());
         }
-        MyMap num = new MyMap();
-        for (Step s : transitions) {
-            num.put(s, 1);
-        }
+        
         for (VarsActionsScenario s : individual.getCounterExamples()) {
-            getTrace(individual, s, num);
+        	getTrace(individual, s, transitions);
         }
-        double sum = 0;
-        for (Step s : transitions) {
-            sum += num.get(s);
-        }
-        int i = 0;
-        double cur = num.get(transitions.get(0)) / sum;
+        List<Step> uniqueTransitions = new ArrayList<>();
+        uniqueTransitions.addAll(transitions);
+        Collections.sort(uniqueTransitions, new Comparator<Step>() {
+			@Override
+			public int compare(Step o1, Step o2) {
+				return Double.compare(o1.weight, o2.weight);
+			}
+        });
+        
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        while (random.nextDouble() > cur) {
-            i++;
-            cur += num.get(transitions.get(i)) / sum;
+        int size = uniqueTransitions.size();
+        double weight[] = new double[size];
+        weight[0] = uniqueTransitions.get(0).weight;
+        for (int i = 1; i < size; i++) {
+        	weight[i] = weight[i - 1] + uniqueTransitions.get(i).weight;
         }
-        Step s = transitions.get(i);
+        
+        double p = weight[size - 1] * random.nextDouble();
+        int j = 0;
+        while (p > weight[j]) {
+        	j++;
+        }
+        
+        Step s = uniqueTransitions.get(j);
+//        
         MultiMaskEfsmSkeleton ind = new MultiMaskEfsmSkeleton(individual);
         int x = random.nextInt(MultiMaskEfsmSkeleton.STATE_COUNT);
         ind.getState(s.state).getTransitionGroup(s.event, s.group).setNewState(s.index, x);
@@ -60,12 +79,12 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
 
     @Override
     public double probability() {
-        return 1;
+        return probability;
     }
 
     @Override
     public void setProbability(double probability) {
-
+    	this.probability = probability;
     }
 
     private List<Step> getTransitions(MultiMaskEfsmSkeleton individual) {
@@ -75,7 +94,7 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
                 for (int group = 0; group < individual.getState(state).getTransitionGroupCount(event); group++) {
                     for (int index = 0; index < individual.getState(state).getTransitionGroup(event, group).getTransitionsCount(); index++) {
                         if (individual.getState(state).getTransitionGroup(event, group).getNewState(index) != -1) {
-                            transitions.add(new Step(state, event, group, index));
+                            transitions.add(new Step(state, event, group, index, 1));
                         }
                     }
                 }
@@ -84,7 +103,7 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
         return transitions;
     }
 
-    private void getTrace(MultiMaskEfsmSkeleton individual, VarsActionsScenario scenario, MyMap num) {
+    private void getTrace(MultiMaskEfsmSkeleton individual, VarsActionsScenario scenario, Set<Step> transitions) {
         int state = individual.getInitialState();
         for (int i = 0; i < scenario.size(); i++) {
             ScenarioElement element = scenario.get(i);
@@ -116,8 +135,11 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
                 break;
             }
             if (group != -1) {
-                Step s = new Step(state, eid, group, index);
-                num.add(s, lambda);
+                Step s = new Step(state, eid, group, index, 1 + lambda);
+                if (transitions.contains(s)) {
+                	transitions.remove(s);
+                	transitions.add(s);
+                }
                 state = res;
             }
         }
@@ -125,14 +147,24 @@ public class CounterExampleMutator implements Mutator<MultiMaskEfsmSkeleton, Mul
 
     private static class Step {
         public int state, event, group, index;
+        public double weight;
 
-        public Step(int state, int event, int group, int index) {
+        public Step(int state, int event, int group, int index, double weight) {
             this.state = state;
             this.event = event;
             this.group = group;
             this.index = index;
+            this.weight = weight;
         }
-
+        
+        public Step(Step other) {
+        	state = other.state;
+        	event = other.event;
+        	group = other.group;
+        	index = other.index;
+        	weight = other.weight;
+        }
+        
         @Override
         public int hashCode() {
             return state << 26 + event << 20 + group << 14 + index;

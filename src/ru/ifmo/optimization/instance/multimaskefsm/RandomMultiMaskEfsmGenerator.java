@@ -2,26 +2,27 @@ package ru.ifmo.optimization.instance.multimaskefsm;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.instance.InstanceGenerator;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-import ru.ifmo.random.RandomProvider;
 
 public class RandomMultiMaskEfsmGenerator implements InstanceGenerator {
 
 	@Override
 	public MultiMaskEfsmSkeleton createInstance(AbstractOptimizationTask task) {
-		return createInstance();
-	}
-
-	public MultiMaskEfsmSkeleton createInstance() {
 		State[] states = new State[MultiMaskEfsmSkeleton.STATE_COUNT];
+		
+		ThreadLocalRandom random = ThreadLocalRandom.current();
 		for (int i = 0; i < states.length; i++) {
 			states[i] = new State();
+//			for (int j = 0; j < states[i].getNumberOfOutputActions(); j++) {
+//				states[i].setFixedActionId(j, RandomProvider.getInstance().nextInt(((MultiMaskTask)task).getPrecalculatedActionsCount()));
+//			}
 			
 			int[] meaningfulPredicateCount = new int[MultiMaskEfsmSkeleton.TRANSITION_GROUPS_COUNT];
 			for (int j = 0; j < meaningfulPredicateCount.length; j++) {
-				meaningfulPredicateCount[j] = Math.max(1, RandomProvider.getInstance().nextInt(MultiMaskEfsmSkeleton.MEANINGFUL_PREDICATES_COUNT + 1));
+				meaningfulPredicateCount[j] = Math.max(1, random.nextInt(MultiMaskEfsmSkeleton.MEANINGFUL_PREDICATES_COUNT + 1));
 			}
 			
 			for (String inputEvent : MultiMaskEfsmSkeleton.INPUT_EVENTS.keySet()) {
@@ -33,7 +34,7 @@ public class RandomMultiMaskEfsmGenerator implements InstanceGenerator {
 
 
 					while (meaningfulPredicates.size() < meaningfulPredicateCount[j]) {
-						meaningfulPredicates.add(RandomProvider.getInstance().nextInt(MultiMaskEfsmSkeleton.PREDICATE_COUNT));
+						meaningfulPredicates.add(random.nextInt(MultiMaskEfsmSkeleton.PREDICATE_COUNT));
 					}
 					for (Integer predicateId : meaningfulPredicates) {
 						tg.setMaskElement(predicateId, true);
@@ -41,7 +42,7 @@ public class RandomMultiMaskEfsmGenerator implements InstanceGenerator {
 
 					//set new state for each transition
 					for (int k = 0; k < tg.getTransitionsCount(); k++) {
-						tg.setNewState(k, RandomProvider.getInstance().nextInt(MultiMaskEfsmSkeleton.STATE_COUNT + 1) - 1);
+						tg.setNewState(k, random.nextInt(MultiMaskEfsmSkeleton.STATE_COUNT + 1) - 1);
 					}
 					states[i].addTransitionGroup(inputEvent, tg);
 				}

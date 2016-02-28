@@ -1,5 +1,7 @@
 package ru.ifmo.optimization.instance.fsm.mutator;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
 import ru.ifmo.optimization.algorithm.muaco.mutator.MutatedInstanceMetaData;
 import ru.ifmo.optimization.instance.Mutator;
@@ -8,7 +10,6 @@ import ru.ifmo.optimization.instance.fsm.mutation.FsmMutation;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmTransitionMutation;
 import ru.ifmo.optimization.instance.fsm.task.AbstractAutomatonTask;
 import ru.ifmo.optimization.instance.fsm.task.AutomatonTaskConstraints;
-import ru.ifmo.random.RandomProvider;
 
 public class MultipleOutputActionsMutator implements Mutator<FSM, FsmMutation>{
 
@@ -27,12 +28,14 @@ public class MultipleOutputActionsMutator implements Mutator<FSM, FsmMutation>{
 		MutationCollection<FsmMutation> mutations = new MutationCollection<FsmMutation>();
 		FSM mutated = new FSM(individual);
 		
+		ThreadLocalRandom random = ThreadLocalRandom.current();
+		
 		for (int state = 0; state < individual.getNumberOfStates(); state++) {
 			for (int event = 0; event < individual.getNumberOfEvents(); event++) {
-				if (RandomProvider.getInstance().nextDouble() > mutationProbability) {
+				if (random.nextDouble() > mutationProbability) {
 					continue;
 				}
-				String newAction = actions[RandomProvider.getInstance().nextInt(actions.length)];
+				String newAction = actions[random.nextInt(actions.length)];
 				if (constraints.hasConstraints(event)) {
 					if (constraints.getConstraints(event).contains(newAction)) {
 						continue;

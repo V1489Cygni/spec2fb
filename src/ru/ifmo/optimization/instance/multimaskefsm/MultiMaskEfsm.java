@@ -9,23 +9,34 @@ import java.util.regex.Pattern;
 
 public class MultiMaskEfsm implements Serializable {
     private static Pattern transitionPattern = Pattern.compile("^([0-9]+)\\s->\\s([0-9]+)\\s\\[label\\s=\\s\"([A-Z]+)\\s\\[(.+)\\] \\(\\)\"\\];$");
-    private static Pattern statePattern = Pattern.compile("^([0-9]+)\\s\\[label=\"s_([01x]+(_[0-9]+)?)\\(([A-Z]*)\\)\"\\];$");
+//    private static Pattern statePattern = Pattern.compile("^([0-9]+)\\s\\[label=\"s_([01x]+(_[0-9]+)?)\\(([A-Z]*)\\)\"\\];$");
+    private static Pattern statePattern = Pattern.compile("([0-9]+)\\s\\[label=\"s_([01x]+(_[0-9]+)?)\\(([A-Z]*)\\);\"\\];");
+
     private MultiMaskEfsmSkeleton skeleton;
-    private OutputAction[] actions;
+    private List<OutputAction>[] actions;
 
     public MultiMaskEfsm(MultiMaskEfsmSkeleton skeleton) {
         this.skeleton = new MultiMaskEfsmSkeleton(skeleton);
-        actions = new OutputAction[MultiMaskEfsmSkeleton.STATE_COUNT];
+        actions = new ArrayList[MultiMaskEfsmSkeleton.STATE_COUNT];
+        for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
+        	actions[i] = new ArrayList<OutputAction>();
+        }
     }
 
-    public MultiMaskEfsm(MultiMaskEfsmSkeleton skeleton, OutputAction[] actions) {
+    public MultiMaskEfsm(MultiMaskEfsmSkeleton skeleton, List<OutputAction>[] actions) {
         this.skeleton = new MultiMaskEfsmSkeleton(skeleton);
-        this.actions = Arrays.copyOf(actions, actions.length);
+        this.actions = new ArrayList[MultiMaskEfsmSkeleton.STATE_COUNT];
+        for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
+        	this.actions[i].addAll(actions[i]);
+        }
     }
 
     public MultiMaskEfsm(String filename) {
         State[] states = new State[MultiMaskEfsmSkeleton.STATE_COUNT];
-        actions = new OutputAction[MultiMaskEfsmSkeleton.STATE_COUNT];
+        actions = new ArrayList[MultiMaskEfsmSkeleton.STATE_COUNT];
+        for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
+        	actions[i] = new ArrayList<OutputAction>();
+        }
         Map<String, Integer>[] transitionGroupMap = new HashMap[MultiMaskEfsmSkeleton.STATE_COUNT];
 
         for (int stateId = 0; stateId < transitionGroupMap.length; stateId++) {
@@ -51,7 +62,7 @@ public class MultiMaskEfsm implements Serializable {
                 int state = Integer.parseInt(m.group(1));
                 String algorithm = m.group(2);
                 String outputEvent = m.group(4);
-                actions[state] = new OutputAction(algorithm, outputEvent);
+                actions[state].add(new OutputAction(algorithm, outputEvent));
                 continue;
             }
             Matcher m = transitionPattern.matcher(line);
@@ -107,36 +118,12 @@ public class MultiMaskEfsm implements Serializable {
 
         in.close();
 
-//		//check that all states have all needed data
-//		for (int state = 0; state < states.length; state++) {
-//			for (String inputEvent : MultiMaskEfsmSkeleton.INPUT_EVENTS.keySet()) {
-//				int eventIndex = MultiMaskEfsmSkeleton.INPUT_EVENTS.get(inputEvent);
-//				for (int tgId = 0; tgId < MultiMaskEfsmSkeleton.TRANSITION_GROUPS_COUNT; tgId++) {
-//					if (states[state].getTransitionGroup(eventIndex, tgId) == null) {
-//						states[state].addTransitionGroup(inputEvent, new TransitionGroup(1));
-//						Set<Integer> meaningfulPredicates = new HashSet<Integer>();
-//						meaningfulPredicates.add(RandomProvider.getInstance().nextInt(MultiMaskEfsmSkeleton.PREDICATE_COUNT));
-//						for (Integer predicateId : meaningfulPredicates) {
-//							states[state].getTransitionGroup(eventIndex, tgId).setMaskElement(predicateId, true);
-//						}
-//						continue;
-//					}
-//					if (states[state].getTransitionGroup(eventIndex, tgId).getMeaningfulPredicateIds().isEmpty()) {
-//						Set<Integer> meaningfulPredicates = new HashSet<Integer>();
-//						while (meaningfulPredicates.size() < MultiMaskEfsmSkeleton.MEANINGFUL_PREDICATES_COUNT) {
-//							meaningfulPredicates.add(RandomProvider.getInstance().nextInt(MultiMaskEfsmSkeleton.PREDICATE_COUNT));
-//						}
-//						for (Integer predicateId : meaningfulPredicates) {
-//							states[state].getTransitionGroup(eventIndex, tgId).setMaskElement(predicateId, true);
-//						}
-//					}
-//				}
-//			}
-//		}
-
-
         skeleton = new MultiMaskEfsmSkeleton(states);
         skeleton.removeNullTransitionGroups();
+    }
+    
+    public int getNumberOfStates() {
+    	return skeleton.getNumberOfStates();
     }
 
     public void markTransitionsUnused() {
@@ -159,13 +146,27 @@ public class MultiMaskEfsm implements Serializable {
         int newState = skeleton.getNewState(state, inputEvent, variableValues);
         return newState;
     }
-
-    public void setActions(int state, OutputAction actions) {
-        this.actions[state] = actions;
+    
+    public void setNumberOfActions(int state, int size) {
+    	while (actions[state].size() < size) {
+    		actions[state].add(null);
+    	}
     }
 
-    public OutputAction getActions(int state) {
+    public void setActions(int state, OutputAction actions, int i) {
+        this.actions[state].set(i, actions);
+    }
+    
+    public void addActions(int state, OutputAction actions) {
+    	this.actions[state].add(actions);
+    }
+
+    public List<OutputAction> getActions(int state) {
         return actions[state];
+    }
+    
+    public int getActionsCount(int state) {
+    	return actions[state].size();
     }
 
     public State getState(int stateId) {
@@ -181,14 +182,17 @@ public class MultiMaskEfsm implements Serializable {
         sb.append("digraph efsm{\n");
         for (int state = 0; state < actions.length; state++) {
             if (skeleton.stateUsedInTransitions(state)) {
-                String label = actions[state].getAlgorithm();
+            	String label = "";
+            	for (OutputAction a : actions[state]) {
+            		label += a.getAlgorithm() + "(" + a.getOutputEvent() +");";
+            	}            		
                 if (labelSet.containsKey(label)) {
                     labelSet.put(label, labelSet.get(label) + 1);
                     label = label + "_" + labelSet.get(label);
                 } else {
                     labelSet.put(label, 1);
                 }
-                sb.append(stateCounter + " [label=\"s_" + label + "(" + actions[state].getOutputEvent() + ")" + "\"];\n");
+                sb.append(stateCounter + " [label=\"s_" + label + "\"];\n");
                 stateIdMap.put(state, stateCounter);
                 stateCounter++;
             }
@@ -200,6 +204,10 @@ public class MultiMaskEfsm implements Serializable {
     }
 
     public OutputAction[] getActions() {
-        return actions;
+    	List<OutputAction> outputActions = new ArrayList<OutputAction>();
+    	for (List<OutputAction> a : actions) {
+    		outputActions.addAll(a);
+    	}
+        return outputActions.toArray(new OutputAction[0]);
     }
 }

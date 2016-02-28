@@ -2,13 +2,13 @@ package ru.ifmo.optimization.algorithm.muaco.startnodesselector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.algorithm.muaco.graph.Node;
 import ru.ifmo.optimization.algorithm.muaco.graph.Path;
 import ru.ifmo.optimization.algorithm.muaco.graph.SearchGraph;
 import ru.ifmo.optimization.instance.Constructable;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
-import ru.ifmo.random.RandomProvider;
 
 public class BestPathStartNodesSelector<Instance extends Constructable<Instance>, MutationType extends InstanceMutation<Instance>> extends StartNodesSelector<Instance, MutationType> {
 	@Override
@@ -20,7 +20,7 @@ public class BestPathStartNodesSelector<Instance extends Constructable<Instance>
 			if (bestPath.getEdges().size() == 0 || j == 0) {
 				start = graph.getRoot();
 			} else {
-				start = bestPath.getEdges().get(RandomProvider.getInstance().nextInt(bestPath.getEdges().size())).getDest();
+				start = bestPath.getEdges().get(ThreadLocalRandom.current().nextInt(bestPath.getEdges().size())).getDest();
 			}
 			startNodes.add(start);
     	}

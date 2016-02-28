@@ -23,6 +23,19 @@ public class OutputAction implements Serializable {
     public String getOutputEvent() {
         return outputEvent;
     }
+    
+    public boolean isDoNothing() {
+    	if (!getOutputEvent().isEmpty()) {
+    		return false;
+    	}
+    	
+    	for (char c : algorithm.toCharArray()) {
+    		if (c != 'x') {
+    			return false;
+    		}
+    	}
+    	return true;
+    }
 
     @Override
     public boolean equals(Object obj) {

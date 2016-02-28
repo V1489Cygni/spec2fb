@@ -1,11 +1,11 @@
 package ru.ifmo.optimization.instance.fsm.crossover;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.algorithm.muaco.mutator.MutatedInstanceMetaData;
 import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmMutation;
-import ru.ifmo.random.RandomProvider;
 
 public class MixedCrossover implements AbstractCrossover<FSM, FsmMutation> {
 
@@ -14,7 +14,7 @@ public class MixedCrossover implements AbstractCrossover<FSM, FsmMutation> {
 	
 	@Override
 	public List<MutatedInstanceMetaData<FSM, FsmMutation>> apply(FSM first, FSM second) {
-		if (RandomProvider.getInstance().nextBoolean()) {
+		if (ThreadLocalRandom.current().nextBoolean()) {
 			return simpleCrossover.apply(first, second);
 		}
 		return testBasedCrossover.apply(first, second);

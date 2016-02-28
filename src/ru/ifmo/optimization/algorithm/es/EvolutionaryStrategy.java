@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.AbstractOptimizationAlgorithm;
 import ru.ifmo.optimization.OptimizationAlgorithmCutoff;
@@ -21,7 +22,6 @@ import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.InitialFSMGenerator;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
-import ru.ifmo.random.RandomProvider;
 import ru.ifmo.util.Pair;
 
 public abstract class EvolutionaryStrategy<Instance extends Checkable<Instance, MutationType>, 
@@ -85,7 +85,7 @@ public abstract class EvolutionaryStrategy<Instance extends Checkable<Instance, 
 	}
 	
 	private MutatedInstanceMetaData<Instance, MutationType> mutateInstance(Instance instance) {
-        return mutators.get(RandomProvider.getInstance().nextInt(mutators.size())).apply(instance);
+        return mutators.get(ThreadLocalRandom.current().nextInt(mutators.size())).apply(instance);
     }
 	
 	@Override

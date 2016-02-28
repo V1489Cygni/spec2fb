@@ -2,11 +2,11 @@ package ru.ifmo.optimization.instance.fsm.landscape.sampler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.instance.FitInstance;
 import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.task.AbstractAutomatonTask;
-import ru.ifmo.random.RandomProvider;
 
 public class MetropolisHastingsInstaceSampler extends InstanceSampler {
 	public MetropolisHastingsInstaceSampler(AbstractAutomatonTask task) {
@@ -25,7 +25,7 @@ public class MetropolisHastingsInstaceSampler extends InstanceSampler {
 		while (samples.size() < sampleSize) {
 			FitInstance<FSM> sample = applyFitness(createRandomFSM());
 			
-			double u = RandomProvider.getInstance().nextDouble();
+			double u = ThreadLocalRandom.current().nextDouble();
 			if (u <= alpha(samples.get(samples.size() - 1), sample)) {
 				samples.add(sample);
 			}

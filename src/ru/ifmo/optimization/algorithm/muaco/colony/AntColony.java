@@ -41,7 +41,7 @@ public abstract class AntColony<Instance extends Constructable<Instance>, Mutati
 	}
 	
 	public boolean isLimitExceeded() {
-		return OptimizationAlgorithmCutoff.getInstance().doStop(task.getNumberOfFitnessEvaluations());
+		return OptimizationAlgorithmCutoff.getInstance().doStop(task.getNumberOfFitnessEvaluations()) || Thread.currentThread().isInterrupted();
 	}
 	
 	public abstract List<Path> run();

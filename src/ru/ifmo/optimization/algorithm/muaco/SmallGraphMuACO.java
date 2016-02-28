@@ -39,7 +39,7 @@ public class SmallGraphMuACO <Instance extends Constructable<Instance>,
 			graph.clear();
 			task.reset();
 			
-			FitInstance<Instance> md =  task.getFitInstance(stats.getBestInstance());
+			FitInstance<Instance> md = task.getFitInstance(stats.getBestInstance());
 			graph = config.getSearchGraph(pheromoneUpdater, config.getHeuristicDistance(), md);
 			stats.setBest(graph.getNode(md.getInstance()), md.getInstance(), System.currentTimeMillis());
 		}

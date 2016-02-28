@@ -1,6 +1,7 @@
 package ru.ifmo.optimization.algorithm.rmhc;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.AbstractOptimizationAlgorithm;
 import ru.ifmo.optimization.OptimizationAlgorithmCutoff;
@@ -11,7 +12,6 @@ import ru.ifmo.optimization.instance.Mutator;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-import ru.ifmo.random.RandomProvider;
 
 public class RandomMutationHillClimber<Instance extends Constructable<Instance>, 
 			MutationType extends InstanceMutation<Instance>> extends AbstractOptimizationAlgorithm<Instance> {
@@ -33,7 +33,7 @@ public class RandomMutationHillClimber<Instance extends Constructable<Instance>,
 	}
 	
 	private MutatedInstanceMetaData<Instance, MutationType> mutateFSM(Instance instance) {
-        return mutators.get(RandomProvider.getInstance().nextInt(mutators.size())).apply(instance);
+        return mutators.get(ThreadLocalRandom.current().nextInt(mutators.size())).apply(instance);
     }
 	
 	@Override

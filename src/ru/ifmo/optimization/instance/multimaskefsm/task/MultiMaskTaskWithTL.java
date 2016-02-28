@@ -1,12 +1,31 @@
 package ru.ifmo.optimization.instance.multimaskefsm.task;
 
-import ru.ifmo.optimization.instance.FitInstance;
-import ru.ifmo.optimization.instance.multimaskefsm.*;
-import ru.ifmo.optimization.instance.task.AbstractTaskConfig;
-import ru.ifmo.random.RandomProvider;
+import java.io.BufferedInputStream;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
 
-import java.io.*;
-import java.util.*;
+import ru.ifmo.optimization.instance.FitInstance;
+import ru.ifmo.optimization.instance.InstanceMetaData;
+import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskEfsm;
+import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskEfsmSkeleton;
+import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskMetaData;
+import ru.ifmo.optimization.instance.multimaskefsm.OutputAction;
+import ru.ifmo.optimization.instance.multimaskefsm.State;
+import ru.ifmo.optimization.instance.multimaskefsm.TransitionGroup;
+import ru.ifmo.optimization.instance.task.AbstractTaskConfig;
 
 public class MultiMaskTaskWithTL extends MultiMaskTask {
     public String prefix;
@@ -20,7 +39,13 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
     private double averageSatisfiedSpecifications;
     private long time, number;
     private int bmcLen;
-    private double threshold, probability, scenariosWeight, tlWeight;
+    private double threshold;
+    private double probability, initialProbability, scenariosOkProbability;
+    private double scenariosWeight, tlWeight;
+    private int maxTotalCounterExampleLength = -1;
+    private double counterExampleLengthFitnessPower;
+    private double counterExampleLengthWeight;
+    private double maxFitness;
 
     public MultiMaskTaskWithTL(AbstractTaskConfig config) {
         super(config);
@@ -33,112 +58,84 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
             prefix = config.getProperty("prefix");
             bmcLen = Integer.parseInt(config.getProperty("bmc-len"));
             threshold = Double.parseDouble(config.getProperty("tl-eval-threshold"));
-            probability = Double.parseDouble(config.getProperty("tl-eval-probability"));
+            initialProbability = Double.parseDouble(config.getProperty("initial-tl-eval-probability"));
+            scenariosOkProbability = Double.parseDouble(config.getProperty("scenarios-ok-tl-eval-probability"));
+            probability = initialProbability;
             scenariosWeight = Double.parseDouble(config.getProperty("scenarios-weight"));
             tlWeight = 1 - scenariosWeight;
+            counterExampleLengthFitnessPower = Double.parseDouble(config.getProperty("counter-example-ff-power"));
+            counterExampleLengthWeight = Double.parseDouble(config.getProperty("counter-example-length-weight"));
             System.out.println("TLFitness initialized with bmc=" + bmcLen + ", threshold=" + threshold +
-                    ", probability=" + probability + ", s-weight=" + scenariosWeight);
+                    ", initial-probability=" + initialProbability + ", scenarios-ok-probability=" + scenariosOkProbability + ", s-weight=" + scenariosWeight);
         } catch (IOException e) {
-            System.err.println("Error while initializing MultiMaskTaskWithTL: " + e.getMessage());
+            System.err.println("Error while initializing MultiMaskTaskWitFhTL: " + e.getMessage());
             System.exit(1);
         }
     }
+    
 
     @Override
     public FitInstance<MultiMaskEfsmSkeleton> getFitInstance(MultiMaskEfsmSkeleton instance) {
         //first, try with short scenarios
         MultiMaskEfsm labeledInstance = label(instance, shortScenarios);
-        RunData f = getF(labeledInstance, shortScenarios);
+        double multiplier = 0.3;
+        double start = 0;
+        RunData f = getF(labeledInstance, shortScenarios, 1.0);
 
         //if the fitness value is large enough, try with medium scenarios
         if (f.fitness >= startMediumPreciseFitnessCalculation) {
+        	multiplier = 0.3;
+        	start = 0.3;
             labeledInstance = label(instance, mediumScenarios);
-            f = getF(labeledInstance, mediumScenarios);
+            f = getF(labeledInstance, mediumScenarios, 1.0);
 
             //if the fitness value is large enough, try with full scenarios
             if (f.fitness >= startPreciseFitnessCalculation) {
+            	multiplier = 0.4;
+            	start = 0.6;
                 labeledInstance = label(instance, scenarios);
-                f = getF(labeledInstance, scenarios);
+                f = getF(labeledInstance, scenarios, 1.0);
             }
         }
+        
+        double scenariosFitness = start + multiplier * f.fitness;
+        
+        if (f.fitness > threshold) {
+        	probability = scenariosOkProbability;
+        }
 
-        instance.clearCounterExamples();
-        f.fitness = scenariosWeight * f.fitness + tlWeight * getTLFitness(labeledInstance, f.fitness);
+        
+        double tlFitness = getTLFitness(labeledInstance, start + f.fitness * multiplier);
+        f.fitness = start + multiplier * (scenariosWeight * f.fitness + tlWeight * tlFitness);
+
         instance.getCounterExamples().addAll(labeledInstance.getSkeleton().getCounterExamples());
-        instance.setFitness(labeledInstance.getSkeleton().getFitness());
-
+        instance.setFitness(tlFitness);  //not whole fitness, only TL part!!!
+        
+        if (f.fitness > maxFitness) {
+        	maxFitness = f.fitness;
+        	if (maxFitness > 0.9) {
+        		System.out.println("maxF = " + maxFitness + "; scF = " + scenariosFitness + "; tlF = " + tlFitness);
+        	}
+        }
+        
         if (f.fitness >= 1.0) {
+        	if (tlFitness < 1) {
+        		throw new RuntimeException("TLFitness = " + tlFitness);
+        	}
+        	
             storeResult(labeledInstance);
             f.fitness = 1.1;
             return new FitInstance<>(instance, f.fitness);
         }
 
-        f.fitness += 0.0001 * f.numberOfStateChanges;
+        f.fitness += nStateChangesWeight * f.numberOfStateChanges;
 
         return new FitInstance<>(instance, f.fitness);
     }
 
     @Override
     public FitInstance<MultiMaskEfsmSkeleton> getFitInstance(MultiMaskEfsm instance) {
-//		RunData f = getF(instance, scenarios);
-
-        //first, try with short scenarios
-        RunData f = getF(instance, shortScenarios);
-
-        //if the fitness value is large enough, try with medium scenarios
-        if (f.fitness >= startMediumPreciseFitnessCalculation) {
-            f = getF(instance, mediumScenarios);
-
-            //if the fitness value is large enough, try with full scenarios
-            if (f.fitness >= startPreciseFitnessCalculation) {
-                f = getF(instance, scenarios);
-            }
-        }
-
-        instance.getSkeleton().clearCounterExamples();
-        f.fitness = scenariosWeight * f.fitness + tlWeight * getTLFitness(instance, f.fitness);
-
-        if (f.fitness >= 1.0) {
-            storeResult(instance);
-            f.fitness = 1.1;
-            return new FitInstance<>(instance.getSkeleton(), f.fitness);
-        }
-
-        f.fitness += 0.0001 * f.numberOfStateChanges;
-
-        return new FitInstance<>(instance.getSkeleton(), f.fitness);
-    }
-
-    @Override
-    public double getFitness(MultiMaskEfsm labeledInstance) {
-        RunData f = getF(labeledInstance, scenarios);
-
-        labeledInstance.getSkeleton().clearCounterExamples();
-        f.fitness = scenariosWeight * f.fitness + tlWeight * getTLFitness(labeledInstance, f.fitness);
-
-        if (f.fitness >= 1.0) {
-            storeResult(labeledInstance);
-            f.fitness = 1.1;
-            return 1.1;
-        }
-
-        return f.fitness;
-    }
-
-    @Override
-    public double getFitness(MultiMaskEfsm labeledInstance, VarsActionsScenario[] s) {
-        RunData f = getF(labeledInstance, s);
-
-        labeledInstance.getSkeleton().clearCounterExamples();
-        f.fitness = scenariosWeight * f.fitness + tlWeight * getTLFitness(labeledInstance, f.fitness);
-
-        if (f.fitness >= 1.0) {
-            storeResult(labeledInstance);
-            f.fitness = 1.1;
-            return 1.1;
-        }
-
-        return f.fitness;
+    	return null;
     }
 
     private void storeResult(MultiMaskEfsm ind) {
@@ -196,11 +193,11 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
                 System.err.println("Unexpected number of specifications (see \"" + prefix + "error_case.smv\").");
                 throw new AssertionError();
             }
-            synchronized (this) {
-                maxSatisfiedSpecifications = Math.max(maxSatisfiedSpecifications, t);
-                averageSatisfiedSpecifications += t;
-                fitnessEvaluations++;
-            }
+            
+            maxSatisfiedSpecifications = Math.max(maxSatisfiedSpecifications, t);
+            averageSatisfiedSpecifications += t;
+            fitnessEvaluations++;
+            
             return (double) t / specNum;
         } catch (IOException e) {
             e.printStackTrace();
@@ -246,11 +243,11 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
                 System.err.println("Unexpected number of specifications (see \"" + prefix + "error_case.smv\").");
                 throw new AssertionError();
             }
-            synchronized (this) {
-                maxSatisfiedSpecifications = Math.max(maxSatisfiedSpecifications, t);
-                averageSatisfiedSpecifications += t;
-                fitnessEvaluations++;
-            }
+            
+            maxSatisfiedSpecifications = Math.max(maxSatisfiedSpecifications, t);
+            averageSatisfiedSpecifications += t;
+            fitnessEvaluations++;
+            
             return (double) t / specNum;
         } catch (IOException e) {
             e.printStackTrace();
@@ -317,7 +314,7 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
     }
 
     public String getSMV(MultiMaskEfsm instance) {
-        assert names.size() == instance.getActions(0).getAlgorithm().length();
+        assert names.size() == instance.getActions(0).get(0).getAlgorithm().length();
         Map<Integer, String> ie = new HashMap<>();
         for (String s : MultiMaskEfsmSkeleton.INPUT_EVENTS.keySet()) {
             ie.put(MultiMaskEfsmSkeleton.INPUT_EVENTS.get(s), s);
@@ -325,7 +322,7 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
         MultiMaskEfsmSkeleton skeleton = instance.getSkeleton();
         List<String> sNames = new ArrayList<>();
         Map<String, Integer> count = new HashMap<>();
-        for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
+        for (int i = 0; i < instance.getNumberOfStates(); i++) {
             String s = instance.getActions()[i].getAlgorithm();
             if (count.containsKey(s)) {
                 count.put(s, count.get(s) + 1);
@@ -375,12 +372,13 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
                 }
             }
         }
+        
         s.append("    TRUE : _state;\nesac;\n\n");
         for (String ss : outputEvents) {
             if (!ss.isEmpty()) {
                 s.append(ss).append(" := FALSE");
                 for (int i = 0; i < MultiMaskEfsmSkeleton.STATE_COUNT; i++) {
-                    if (instance.getActions(i).getOutputEvent().equals(ss)) {
+                    if (instance.getActions(i).get(0).getOutputEvent().equals(ss)) {
                         s.append(" | _state = s_").append(sNames.get(i));
                     }
                 }
@@ -388,17 +386,17 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
             }
         }
         for (int i = 0; i < names.size(); i++) {
-            char c = instance.getActions(instance.getInitialState()).getAlgorithm().charAt(i);
+            char c = instance.getActions(instance.getInitialState()).get(0).getAlgorithm().charAt(i);
             s.append("init(").append(names.get(i)).append(") := ").append(c == '1' ? "TRUE" : "FALSE").append(";\n\n");
             s.append("next(").append(names.get(i)).append(") := case\n    FALSE");
             for (int j = 0; j < MultiMaskEfsmSkeleton.STATE_COUNT; j++) {
-                if (instance.getActions(j).getAlgorithm().charAt(i) == '1') {
+                if (instance.getActions(j).get(0).getAlgorithm().charAt(i) == '1') {
                     s.append(" | next(_state) = s_").append(sNames.get(j));
                 }
             }
             s.append(" : TRUE;\n    FALSE");
             for (int j = 0; j < MultiMaskEfsmSkeleton.STATE_COUNT; j++) {
-                if (instance.getActions(j).getAlgorithm().charAt(i) == '0') {
+                if (instance.getActions(j).get(0).getAlgorithm().charAt(i) == '0') {
                     s.append(" | next(_state) = s_").append(sNames.get(j));
                 }
             }
@@ -410,18 +408,16 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
     }
 
     public void printStats() {
-        synchronized (this) {
-        	if (fitnessEvaluations > 0) {
-        		System.out.println("TLFitness: satisfied_specifications: {max: " + maxSatisfiedSpecifications +
-        				", average: " + (averageSatisfiedSpecifications / fitnessEvaluations) + "}");
-        	}
-            averageSatisfiedSpecifications = 0;
-            maxSatisfiedSpecifications = 0;
-            fitnessEvaluations = 0;
-            if (number > 0) {
-            	System.out.println("Time: " + time + ", num: " + number + ", avg: " + time / number);
-            }
-        }
+    	if (fitnessEvaluations > 0) {
+    		System.out.println("TLFitness: satisfied_specifications: {max: " + maxSatisfiedSpecifications +
+    				", average: " + (averageSatisfiedSpecifications / fitnessEvaluations) + "; nevals=" + fitnessEvaluations + "}");
+    	}
+    	averageSatisfiedSpecifications = 0;
+    	maxSatisfiedSpecifications = 0;
+    	fitnessEvaluations = 0;
+    	if (number > 0) {
+    		System.out.println("Time: " + time + ", num: " + number + ", avg: " + time / number);
+    	}
     }
 
     private void initOE() throws FileNotFoundException {
@@ -468,25 +464,46 @@ public class MultiMaskTaskWithTL extends MultiMaskTask {
     }
 
     public double getTLFitness(MultiMaskEfsm instance, double fitness) {
-        if (fitness < threshold && RandomProvider.getInstance().nextDouble() > probability) {
+        if (fitness < threshold && ThreadLocalRandom.current().nextDouble() > probability && instance.getSkeleton().getFitness() > 0){
             return instance.getSkeleton().getFitness();
         }
+        
         instance.getSkeleton().clearCounterExamples();
         String s = getSMV(instance);
-        synchronized (this) {
-            time -= System.currentTimeMillis();
-        }
         double d;
         if (bmcLen == 0) {
-            d = interact(instance, s);
+        	d = interact(instance, s);
         } else {
-            d = interact(instance, s, bmcLen);
+        	d = interact(instance, s, bmcLen);
         }
-        synchronized (this) {
-            time += System.currentTimeMillis();
-            number++;
+        
+        if (instance.getSkeleton().getCounterExamplesLength() == 0) {
+        	instance.getSkeleton().setFitness(d);
+        	return d;
         }
-        instance.getSkeleton().setFitness(d);
-        return d;
+
+        double result = (1.0 - counterExampleLengthWeight) * d + 
+        		counterExampleLengthWeight * (1.0 - Math.pow(1.0 + 0.1 * instance.getSkeleton().getCounterExamplesLength(), -counterExampleLengthFitnessPower));
+        instance.getSkeleton().setFitness(result);
+
+        if (instance.getSkeleton().getCounterExamplesLength() > maxTotalCounterExampleLength) {
+        	maxTotalCounterExampleLength = instance.getSkeleton().getCounterExamplesLength();
+        	System.out.println("Max counterexample length = " + maxTotalCounterExampleLength 
+        			+ "; f = " + result);
+        }
+
+        return result;
+    }
+    
+    @Override
+    public InstanceMetaData<MultiMaskEfsmSkeleton> getInstanceMetaData(
+            MultiMaskEfsmSkeleton instance) {
+        return new MultiMaskMetaData(getFitInstance(instance), label(instance, scenarios));
+    }
+
+    @Override
+    public InstanceMetaData<MultiMaskEfsmSkeleton> getInstanceMetaData(
+            MultiMaskEfsm instance) {
+        return new MultiMaskMetaData(getFitInstance(instance), instance);
     }
 }

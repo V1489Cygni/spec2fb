@@ -6,21 +6,17 @@ import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
 import ru.ifmo.optimization.algorithm.muaco.mutator.MutatedInstanceMetaData;
 import ru.ifmo.optimization.instance.Mutator;
 import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskEfsmSkeleton;
-import ru.ifmo.optimization.instance.multimaskefsm.mutation.MaskMutation;
+import ru.ifmo.optimization.instance.multimaskefsm.mutation.ChangeNumberOfActionsMutation;
 import ru.ifmo.optimization.instance.multimaskefsm.mutation.MultiMaskEfsmMutation;
 
-public class MaskMutator implements Mutator<MultiMaskEfsmSkeleton, MultiMaskEfsmMutation> {
-	
+public class ChangeNumberOfActionsMutator implements Mutator<MultiMaskEfsmSkeleton, MultiMaskEfsmMutation> {
+
 	private double probability;
 	
-	public MaskMutator(double probability) {
+	public ChangeNumberOfActionsMutator(double probability) {
 		this.probability = probability;
 	}
 	
-	public double probability() {
-		return probability;
-	}
-
 	@Override
 	public MutatedInstanceMetaData<MultiMaskEfsmSkeleton, MultiMaskEfsmMutation> apply(
 			MultiMaskEfsmSkeleton individual) {
@@ -28,20 +24,20 @@ public class MaskMutator implements Mutator<MultiMaskEfsmSkeleton, MultiMaskEfsm
 		ThreadLocalRandom random = ThreadLocalRandom.current();
 		
 		int state = random.nextInt(MultiMaskEfsmSkeleton.STATE_COUNT);
-		int eventId = random.nextInt(MultiMaskEfsmSkeleton.INPUT_EVENT_COUNT);
-		int transitionGroup = random.nextInt(MultiMaskEfsmSkeleton.TRANSITION_GROUPS_COUNT);
 		
-		int meaningfulPredicatesCount = individual.getState(state).
-				getTransitionGroup(eventId, transitionGroup).getMeaningfulPredicatesCount();
+		int oldValue = individual.getState(state).getNumberOfOutputActions();
+		int newValue = -1;
+		if (oldValue > 1) {
+			if (oldValue < MultiMaskEfsmSkeleton.MAX_OUTPUT_ACTION_COUNT) {
+				newValue = random.nextBoolean() ? oldValue + 1 : oldValue - 1;
+			} else {
+				newValue = oldValue - 1;
+			}
+		} else {
+			newValue = oldValue + 1;
+		}
 		
-		int setToFalsePredicateId = mutated.getState(state).getTransitionGroup(eventId, transitionGroup).
-				getMeaningfulPredicateIds().get(random.nextInt(meaningfulPredicatesCount));
-		
-		int setToTruePredicateId = mutated.getState(state).getTransitionGroup(eventId, transitionGroup).
-					getUnmeaningfulPredicateIds().get(random.nextInt(
-					MultiMaskEfsmSkeleton.PREDICATE_COUNT - meaningfulPredicatesCount));
-		
-		MultiMaskEfsmMutation mutation = new MaskMutation(state, eventId, transitionGroup, setToFalsePredicateId, setToTruePredicateId);
+		MultiMaskEfsmMutation mutation = new ChangeNumberOfActionsMutation(state, -1, -1, newValue);
 		mutation.apply(mutated);
 		
 		return new MutatedInstanceMetaData<MultiMaskEfsmSkeleton, MultiMaskEfsmMutation>(mutated,
@@ -53,9 +49,14 @@ public class MaskMutator implements Mutator<MultiMaskEfsmSkeleton, MultiMaskEfsm
 		return apply(individual).getInstance();
 	}
 
-	
+	@Override
+	public double probability() {
+		return probability;
+	}
+
 	@Override
 	public void setProbability(double probability) {
 		this.probability = probability;
 	}
+
 }

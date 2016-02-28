@@ -15,25 +15,6 @@ c1Home := st1 = s1 | st1 = s2;
 
 c1End := st1 = s3 | st1 = s4;
 
-init(vst) := v1;
-next(vst) := case
-    next(CNF & vcExtend) & vst = v1 : v2;
-    next(vcExtend) & vst = v2 : v3;
-    next(vcExtend) & vst = v3 : v6;
-    next(vcExtend) & vst = v4 : v6;
-    next(vcExtend) & vst = v5 : v6;
-    next(!vcExtend) & vst = v2 : v1;
-    next(!vcExtend) & vst = v3 : v1;
-    next(!vcExtend) & vst = v4 : v1;
-    next(!vcExtend) & vst = v5 : v4;
-    next(CNF & !vcExtend) & vst = v6 : v5;
-    TRUE : vst;
-esac;
-
-vcHome := vst = v1 | vst = v2 | vst = v3;
-
-vcEnd := vst = v4 | vst = v5 | vst = v6;
-
 init(c2Home) := TRUE;
 next(c2Home) := case
 	next(CNF) & next(c2Extend) : FALSE;
@@ -46,6 +27,20 @@ next(c2End) := case
 	next(CNF) & next(c2Extend) : TRUE;
 	next(CNF) & next(c2Retract) : FALSE;
 	TRUE : c2End;
+esac;
+
+init(vcHome) := TRUE;
+next(vcHome) := case
+	next(CNF) & next(vcExtend) : FALSE;
+	next(CNF) & !next(vcExtend) : TRUE;
+	TRUE : vcHome;
+esac;
+
+init(vcEnd) := FALSE;
+next(vcEnd) := case
+	next(CNF) & next(vcExtend) : TRUE;
+	next(CNF) & !next(vcExtend) : FALSE;
+	TRUE : vcEnd;
 esac;
 
 init(vs) := FALSE;

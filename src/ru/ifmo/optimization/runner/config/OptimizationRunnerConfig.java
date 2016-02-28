@@ -9,6 +9,12 @@ import ru.ifmo.optimization.algorithm.muaco.MultiStartMuACO;
 import ru.ifmo.optimization.algorithm.muaco.SmallGraphMuACO;
 import ru.ifmo.optimization.algorithm.muaco.config.MuACOConfig;
 import ru.ifmo.optimization.algorithm.muaco.parallel.*;
+import ru.ifmo.optimization.algorithm.rmhc.RandomMutationHillClimber;
+import ru.ifmo.optimization.algorithm.rmhc.config.RmhcConfig;
+import ru.ifmo.optimization.algorithm.rmhc.factory.RandomMutationHillClimberFactory;
+import ru.ifmo.optimization.instance.Constructable;
+import ru.ifmo.optimization.instance.fsm.FSM;
+import ru.ifmo.optimization.instance.fsm.InitialFSMGenerator;
 import ru.ifmo.optimization.instance.fsm.task.factory.FsmTaskFactory;
 import ru.ifmo.optimization.instance.multimaskefsm.task.MultiMaskTaskFactory;
 import ru.ifmo.optimization.instance.task.AbstractTaskConfig;
@@ -101,8 +107,6 @@ public class OptimizationRunnerConfig {
                 return new GeneticAlgorithm(new GeneticAlgorithmConfig("genetic.properties"), taskFactory);
             case FSM_GENETIC:
                 return new FsmGeneticAlgorithm(new GeneticAlgorithmConfig("genetic.properties"), taskFactory);
-            case PARALLEL_MUACO_GA:
-                return new ParallelMuAcoGeneticAlgorithm(taskFactory);
             case CROSSOVER_AND_SHARED_BEST_PARALLEL_VARIABLE_WEIGHTS_MUACO:
                 return new CrossoverAndSharedBestParallelMuACOWithVariableWeights(muacoConfig, taskFactory);
             case CROSSOVER_AND_VARIABLE_PARAMETERS_PARALLEL_MUACO:
@@ -115,6 +119,10 @@ public class OptimizationRunnerConfig {
                 return new NoInterruptionKmeansClusteringParallelMuACO(muacoConfig, taskFactory);
             case FREQUENT_RESTART_PARALLEL_MUACO:
                 return new FrequentRestartParallelMuACO(muacoConfig, taskFactory);
+            case RMHC:
+            	return new RandomMutationHillClimber(taskFactory, new RmhcConfig("rmhc.properties").getMutators(taskFactory.createTask()),
+            			(Constructable) new RmhcConfig("rmhc.properties").getInstanceGenerator().createInstance(taskFactory.createTask()));
+            	
         }
         return null;
     }
@@ -139,7 +147,8 @@ public class OptimizationRunnerConfig {
         GENETIC,
         ADAPTIVE_LAMBDA_ES,
         FSM_GENETIC,
-        PARALLEL_MUACO_GA
+        PARALLEL_MUACO_GA,
+        RMHC
     }
 
 

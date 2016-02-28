@@ -1,12 +1,13 @@
 package ru.ifmo.optimization.instance.multimaskefsm.mutator;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
 import ru.ifmo.optimization.algorithm.muaco.mutator.MutatedInstanceMetaData;
 import ru.ifmo.optimization.instance.Mutator;
 import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskEfsmSkeleton;
 import ru.ifmo.optimization.instance.multimaskefsm.mutation.ChangeMeaningfulPredicatesMutation;
 import ru.ifmo.optimization.instance.multimaskefsm.mutation.MultiMaskEfsmMutation;
-import ru.ifmo.random.RandomProvider;
 
 public class ChangeMeaningfulPredicatesMutator implements Mutator<MultiMaskEfsmSkeleton, MultiMaskEfsmMutation> {
 
@@ -19,10 +20,12 @@ public class ChangeMeaningfulPredicatesMutator implements Mutator<MultiMaskEfsmS
 	@Override
 	public MutatedInstanceMetaData<MultiMaskEfsmSkeleton, MultiMaskEfsmMutation> apply(
 			MultiMaskEfsmSkeleton individual) {
+		
+		ThreadLocalRandom random = ThreadLocalRandom.current();
 		MultiMaskEfsmSkeleton mutated = new MultiMaskEfsmSkeleton(individual);
-		int state = RandomProvider.getInstance().nextInt(MultiMaskEfsmSkeleton.STATE_COUNT);
-		int eventId = RandomProvider.getInstance().nextInt(MultiMaskEfsmSkeleton.INPUT_EVENT_COUNT);
-		int transitionGroup = RandomProvider.getInstance().nextInt(MultiMaskEfsmSkeleton.TRANSITION_GROUPS_COUNT);
+		int state = random.nextInt(MultiMaskEfsmSkeleton.STATE_COUNT);
+		int eventId = random.nextInt(MultiMaskEfsmSkeleton.INPUT_EVENT_COUNT);
+		int transitionGroup = random.nextInt(MultiMaskEfsmSkeleton.TRANSITION_GROUPS_COUNT);
 		int meaningfulPredicatesCount = mutated.getState(state).getTransitionGroup(eventId, transitionGroup).getMeaningfulPredicatesCount();
 		MultiMaskEfsmMutation mutation = null;
 		
@@ -31,7 +34,7 @@ public class ChangeMeaningfulPredicatesMutator implements Mutator<MultiMaskEfsmS
 		} else if (meaningfulPredicatesCount == MultiMaskEfsmSkeleton.MEANINGFUL_PREDICATES_COUNT) {
 			mutation = deletePredicate(mutated, state, eventId, transitionGroup);
 		} else {
-			if (RandomProvider.getInstance().nextBoolean()) {
+			if (random.nextBoolean()) {
 				mutation = addPredicate(mutated, state, eventId, transitionGroup);
 			} else {
 				mutation = deletePredicate(mutated, state, eventId, transitionGroup);
@@ -44,7 +47,7 @@ public class ChangeMeaningfulPredicatesMutator implements Mutator<MultiMaskEfsmS
 	
 	private MultiMaskEfsmMutation deletePredicate(MultiMaskEfsmSkeleton mutated, int state, int eventId, int transitionGroup) {
 		int predicateToDelete = mutated.getState(state).getTransitionGroup(eventId, transitionGroup).getMeaningfulPredicateIds().get(
-				RandomProvider.getInstance().nextInt(mutated.getState(state).
+				ThreadLocalRandom.current().nextInt(mutated.getState(state).
 				getTransitionGroup(eventId, transitionGroup).getMeaningfulPredicatesCount()));
 		mutated.getState(state).getTransitionGroup(eventId, transitionGroup).removePredicate(predicateToDelete);
 		return new ChangeMeaningfulPredicatesMutation(state, eventId, transitionGroup, false, predicateToDelete);
@@ -52,7 +55,7 @@ public class ChangeMeaningfulPredicatesMutator implements Mutator<MultiMaskEfsmS
 	
 	private MultiMaskEfsmMutation addPredicate(MultiMaskEfsmSkeleton mutated, int state, int eventId, int transitionGroup) {
 		int predicateToAdd = mutated.getState(state).getTransitionGroup(eventId, transitionGroup).getUnmeaningfulPredicateIds().get(
-				RandomProvider.getInstance().nextInt(
+				ThreadLocalRandom.current().nextInt(
 				mutated.getState(state).getTransitionGroup(eventId, transitionGroup).getUnmeaningfulPredicatesCount()));
 		mutated.getState(state).getTransitionGroup(eventId, transitionGroup).addPredicate(predicateToAdd);
 		return new ChangeMeaningfulPredicatesMutation(state, eventId, transitionGroup, true, predicateToAdd);

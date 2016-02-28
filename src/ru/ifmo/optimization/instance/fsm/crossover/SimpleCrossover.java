@@ -3,13 +3,13 @@ package ru.ifmo.optimization.instance.fsm.crossover;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
 import ru.ifmo.optimization.algorithm.muaco.mutator.MutatedInstanceMetaData;
 import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.FSM.Transition;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmMutation;
-import ru.ifmo.random.RandomProvider;
 import ru.ifmo.util.Util;
 
 public class SimpleCrossover implements AbstractCrossover<FSM, FsmMutation> {
@@ -27,7 +27,7 @@ public class SimpleCrossover implements AbstractCrossover<FSM, FsmMutation> {
 			for (Transition t : second.transitions[i]) {
 				list.add(t);
 			}
-			Collections.shuffle(list, RandomProvider.getInstance());
+			Collections.shuffle(list, ThreadLocalRandom.current());
 
 			states1[i] = new Transition[first.transitions[i].length];
 			states2[i] = new Transition[second.transitions[i].length];

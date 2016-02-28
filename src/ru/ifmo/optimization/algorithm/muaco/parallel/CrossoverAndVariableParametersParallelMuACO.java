@@ -1,12 +1,13 @@
 package ru.ifmo.optimization.algorithm.muaco.parallel;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import ru.ifmo.optimization.algorithm.muaco.MuACO;
 import ru.ifmo.optimization.algorithm.muaco.ant.config.AntConfig;
 import ru.ifmo.optimization.algorithm.muaco.config.MuACOConfig;
 import ru.ifmo.optimization.instance.Constructable;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.instance.task.AbstractTaskFactory;
-import ru.ifmo.random.RandomProvider;
 
 public class CrossoverAndVariableParametersParallelMuACO<Instance extends Constructable<Instance>, MutationType extends InstanceMutation<Instance>> 
 	extends CrossoverAndSharedBestParallelMuACO<Instance, MutationType> {
@@ -41,8 +42,8 @@ public class CrossoverAndVariableParametersParallelMuACO<Instance extends Constr
 	}
 
 	private int changeValue(int value) {
-		return (int) (value + Math.pow(-1, RandomProvider.getInstance().nextInt(2)) 
-				* value * RandomProvider.getInstance().nextDouble() * maxVariation);
+		return (int) (value + Math.pow(-1, ThreadLocalRandom.current().nextInt(2)) 
+				* value * ThreadLocalRandom.current().nextDouble() * maxVariation);
 	}
 
 }

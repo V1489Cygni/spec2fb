@@ -1,12 +1,15 @@
 package ru.ifmo.optimization.instance.multimaskefsm.simplifier;
 
 import ru.ifmo.optimization.instance.FitInstance;
-import ru.ifmo.optimization.instance.multimaskefsm.*;
+import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskEfsm;
+import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskEfsmSkeleton;
+import ru.ifmo.optimization.instance.multimaskefsm.MultiMaskMetaData;
+import ru.ifmo.optimization.instance.multimaskefsm.OutputAction;
+import ru.ifmo.optimization.instance.multimaskefsm.TransitionGroup;
 import ru.ifmo.optimization.instance.multimaskefsm.mutation.DestinationStateMutation;
 import ru.ifmo.optimization.instance.multimaskefsm.task.MultiMaskTask;
 import ru.ifmo.optimization.instance.multimaskefsm.task.MultiMaskTaskFactory;
 import ru.ifmo.optimization.instance.task.AbstractTaskConfig;
-import ru.ifmo.random.RandomProvider;
 
 public class MultiMaskEfsmSimplifier implements Runnable {
     private MultiMaskEfsmSkeleton efsm;
@@ -15,8 +18,6 @@ public class MultiMaskEfsmSimplifier implements Runnable {
 
     public MultiMaskEfsmSimplifier(String filename, AbstractTaskConfig config) {
         MultiMaskTaskFactory factory = new MultiMaskTaskFactory(config);
-        RandomProvider.initialize(1, 4317);
-        RandomProvider.register();
         this.task = (MultiMaskTask) factory.createTask();
 //		this.efsm = new MultiMaskEfsm(filename).getSkeleton();
     }
@@ -43,10 +44,11 @@ public class MultiMaskEfsmSimplifier implements Runnable {
     }
 
     private FitInstance<MultiMaskEfsmSkeleton> getFitInstance(MultiMaskEfsmSkeleton skeleton) {
-        if (actions == null) {
-            return task.getFitInstance(skeleton);
-        }
-        return task.getFitInstance(new MultiMaskEfsm(skeleton, actions));
+//        if (actions == null) {
+//            return task.getFitInstance(skeleton);
+//        }
+//        return task.getFitInstance(new MultiMaskEfsm(skeleton, actions));
+    	return null;
     }
 
     public MultiMaskEfsmSkeleton doAll() {
@@ -146,11 +148,11 @@ public class MultiMaskEfsmSimplifier implements Runnable {
     public void run() {
         MultiMaskEfsmSkeleton simplified = doAll();
         MultiMaskMetaData result;
-        if (actions == null) {
-            result = (MultiMaskMetaData) task.getInstanceMetaData(simplified);
-        } else {
-            result = (MultiMaskMetaData) task.getInstanceMetaData(new MultiMaskEfsm(simplified, actions));
-        }
-        result.print("fbdk");
+//        if (actions == null) {
+//            result = (MultiMaskMetaData) task.getInstanceMetaData(simplified);
+//        } else {
+//            result = (MultiMaskMetaData) task.getInstanceMetaData(new MultiMaskEfsm(simplified, actions));
+//        }
+//        result.print("fbdk");
     }
 }

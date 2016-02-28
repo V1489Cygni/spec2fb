@@ -33,6 +33,21 @@ public class StringUtils {
 		return D2[n];
 	}
 	
+	public static double stringLevenshteinDistance(String[] first, String[] second) {
+		StringBuilder firstSb = new StringBuilder();
+		StringBuilder secondSb = new StringBuilder();
+		
+		for (String s : first) {
+			firstSb.append(s);
+		}
+		
+		for (String s : second) {
+			secondSb.append(s);
+		}
+		
+		return levenshteinDistance(firstSb.toString(), secondSb.toString());
+	}
+	
 	public static double levenshteinDistance(String[] first, String[] second) {
 		int n = first.length;
         int m = second.length;
@@ -79,7 +94,7 @@ public class StringUtils {
 			for (int j = 0; j < m; j++) {
 				double cost = first[i].equals(second[j]) 
 						? 0   
-//						: (double)levenshteinDistance(first[i], second[j]) / (double)Math.max(first[i].length(), second[i].length());
+//						: (double)levenshteinDistance(first[i], second[j]) / (double)Math.max(first[i].length(), second[j].length());
 						: (double)hammingDistance(first[i], second[j]) / (double)Math.max(first[i].length(), second[j].length());
 				d[i + 1][j + 1] = Math.min(Math.min(
 						d[i][j + 1] + 1, 

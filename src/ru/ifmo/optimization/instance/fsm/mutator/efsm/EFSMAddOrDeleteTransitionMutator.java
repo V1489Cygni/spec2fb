@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
 import ru.ifmo.optimization.algorithm.muaco.mutator.MutatedInstanceMetaData;
@@ -12,7 +13,6 @@ import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.FSM.Transition;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmMutation;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmTransitionMutation;
-import ru.ifmo.random.RandomProvider;
 import ru.ifmo.util.Util;
 
 public class EFSMAddOrDeleteTransitionMutator implements Mutator<FSM, FsmMutation> {
@@ -29,7 +29,7 @@ public class EFSMAddOrDeleteTransitionMutator implements Mutator<FSM, FsmMutatio
 	}
 	
 	private int getTransitionIdToDelete(Transition[] transitions) {
-		int transitionToDelete = RandomProvider.getInstance().nextInt(Util.numberOfExistingTransitions(transitions));
+		int transitionToDelete = ThreadLocalRandom.current().nextInt(Util.numberOfExistingTransitions(transitions));
 		int existingTransitionCount = 0;
 		for (int i = 0; i < transitions.length; i++) {
 			if (transitions[i].getEndState() != -1) {
@@ -49,9 +49,11 @@ public class EFSMAddOrDeleteTransitionMutator implements Mutator<FSM, FsmMutatio
 		FSM mutated = new FSM(individual);
 		MutationCollection<FsmMutation> mutations = new MutationCollection<FsmMutation>();
 		
+		ThreadLocalRandom random = ThreadLocalRandom.current();
+		
 		for (int state = 0; state < mutated.getNumberOfStates(); state++) {
-			if (RandomProvider.getInstance().nextDouble() < deleteTransitionProbability) { 
-    			if (RandomProvider.getInstance().nextBoolean()) {
+			if (random.nextDouble() < deleteTransitionProbability) { 
+    			if (random.nextBoolean()) {
     				if (Util.hasTransition(mutated.transitions[state])) {
     					//delete a transition
     					int eventToDelete = getTransitionIdToDelete(mutated.transitions[state]);
@@ -81,11 +83,10 @@ public class EFSMAddOrDeleteTransitionMutator implements Mutator<FSM, FsmMutatio
     					}
     					
     					//select random unused event, add a random transition with this event
-    					String input = unusedEvents.get(RandomProvider.getInstance().nextInt(unusedEvents.size()));
+    					String input = unusedEvents.get(random.nextInt(unusedEvents.size()));
     					int indexOfInput = events.indexOf(input);
     					String newAction = "1";//actions[RandomProvider.instance().get().nextInt(actions.length)];
-//    					String newAction = actions[RandomProvider.instance().get().nextInt(actions.length)];
-    					int newDestinationState = RandomProvider.getInstance().nextInt(mutated.getNumberOfStates());
+    					int newDestinationState = random.nextInt(mutated.getNumberOfStates());
     					mutated.transitions[state][indexOfInput].setAction(newAction);
     					mutated.transitions[state][indexOfInput].setEndState(newDestinationState);
     					FsmTransitionMutation mutation = new FsmTransitionMutation(state, indexOfInput, newDestinationState, newAction, true);

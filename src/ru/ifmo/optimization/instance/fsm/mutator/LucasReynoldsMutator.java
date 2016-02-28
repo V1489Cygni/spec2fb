@@ -1,5 +1,7 @@
 package ru.ifmo.optimization.instance.fsm.mutator;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
 import ru.ifmo.optimization.algorithm.muaco.mutator.MutatedInstanceMetaData;
 import ru.ifmo.optimization.instance.Mutator;
@@ -8,7 +10,6 @@ import ru.ifmo.optimization.instance.fsm.mutation.FsmMutation;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmTransitionMutation;
 import ru.ifmo.optimization.instance.fsm.task.AbstractAutomatonTask;
 import ru.ifmo.optimization.instance.fsm.task.AutomatonTaskConstraints;
-import ru.ifmo.random.RandomProvider;
 
 public class LucasReynoldsMutator implements Mutator<FSM, FsmMutation> {
 	private String[] actions;
@@ -23,14 +24,16 @@ public class LucasReynoldsMutator implements Mutator<FSM, FsmMutation> {
 		MutationCollection<FsmMutation> mutations = new MutationCollection<FsmMutation>();
 		FSM mutated = new FSM(individual);
 		
+		ThreadLocalRandom random = ThreadLocalRandom.current();
+		
 		//make at least one mutation
-		int st = RandomProvider.getInstance().nextInt(individual.getNumberOfStates());
-		int ev = RandomProvider.getInstance().nextInt(individual.getNumberOfEvents());
-		int newSt = RandomProvider.getInstance().nextInt(individual.getNumberOfStates());
+		int st = random.nextInt(individual.getNumberOfStates());
+		int ev = random.nextInt(individual.getNumberOfEvents());
+		int newSt = random.nextInt(individual.getNumberOfStates());
 		
 		//make sure we changed something
 		while (newSt == mutated.transitions[st][ev].getEndState()) {
-			newSt = RandomProvider.getInstance().nextInt(individual.getNumberOfStates());
+			newSt = random.nextInt(individual.getNumberOfStates());
 		}
 		mutations.add(new FsmTransitionMutation(st, ev, newSt, mutated.getTransition(st, ev).getAction()));
 		mutated.transitions[st][ev].setEndState(newSt);
@@ -39,18 +42,18 @@ public class LucasReynoldsMutator implements Mutator<FSM, FsmMutation> {
 		//mutate other transitions with a small probability
 		for (int state = 0; state < individual.getNumberOfStates(); state++) {
 			for (int event = 0; event < individual.getNumberOfEvents(); event++) {
-				if (RandomProvider.getInstance().nextDouble() >= mutationProbability) {
+				if (random.nextDouble() >= mutationProbability) {
 					continue;
 				}
 				if (state == st && event == ev) {
 					continue;
 				}
 				
-				int newState = RandomProvider.getInstance().nextInt(individual.getNumberOfStates());
+				int newState = random.nextInt(individual.getNumberOfStates());
 				//make sure we changed something
 				while (true) {
 					if (newState == mutated.transitions[state][event].getEndState()) {
-						newState = RandomProvider.getInstance().nextInt(individual.getNumberOfStates());
+						newState = random.nextInt(individual.getNumberOfStates());
 						continue;
 					}
 					break;
@@ -67,14 +70,16 @@ public class LucasReynoldsMutator implements Mutator<FSM, FsmMutation> {
 		MutationCollection<FsmMutation> mutations = new MutationCollection<FsmMutation>();
 		FSM mutated = new FSM(individual);
 		
-		int st = RandomProvider.getInstance().nextInt(individual.getNumberOfStates());
-		int ev = RandomProvider.getInstance().nextInt(individual.getNumberOfEvents());
+		ThreadLocalRandom random = ThreadLocalRandom.current();
 		
-		String newAct = actions[RandomProvider.getInstance().nextInt(actions.length)];
+		int st = random.nextInt(individual.getNumberOfStates());
+		int ev = random.nextInt(individual.getNumberOfEvents());
+		
+		String newAct = actions[random.nextInt(actions.length)];
 		//make sure we changed something
 		while (true) {
 			if (newAct.equals(mutated.transitions[st][ev].getAction())) {
-				newAct = actions[RandomProvider.getInstance().nextInt(actions.length)];
+				newAct = actions[random.nextInt(actions.length)];
 				continue;
 			}			
 			break;
@@ -85,7 +90,7 @@ public class LucasReynoldsMutator implements Mutator<FSM, FsmMutation> {
 		
 		for (int state = 0; state < individual.getNumberOfStates(); state++) {
 			for (int event = 0; event < individual.getNumberOfEvents(); event++) {
-				if (RandomProvider.getInstance().nextDouble() >= mutationProbability) {
+				if (random.nextDouble() >= mutationProbability) {
 					continue;
 				}
 				
@@ -93,11 +98,11 @@ public class LucasReynoldsMutator implements Mutator<FSM, FsmMutation> {
 					continue;
 				}
 				
-				String newAction = actions[RandomProvider.getInstance().nextInt(actions.length)];
+				String newAction = actions[random.nextInt(actions.length)];
 				//make sure we changed something
 				while (true) {
 					if (newAction.equals(mutated.transitions[state][event].getAction())) {
-						newAction = actions[RandomProvider.getInstance().nextInt(actions.length)];
+						newAction = actions[random.nextInt(actions.length)];
 						continue;
 					}
 					break;
@@ -117,7 +122,7 @@ public class LucasReynoldsMutator implements Mutator<FSM, FsmMutation> {
 		if (actions.length == 1) {
 			return mutateTransitionFunction(individual);
 		} 
-		if (RandomProvider.getInstance().nextBoolean()) {
+		if (ThreadLocalRandom.current().nextBoolean()) {
 			return mutateTransitionFunction(individual);
 		}
 		return mutateActionsFunction(individual);

@@ -3,6 +3,7 @@ package ru.ifmo.optimization.algorithm.muaco.pathselector;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.algorithm.muaco.ant.AntStats;
 import ru.ifmo.optimization.algorithm.muaco.graph.Edge;
@@ -16,7 +17,6 @@ import ru.ifmo.optimization.instance.FitInstance;
 import ru.ifmo.optimization.instance.Mutator;
 import ru.ifmo.optimization.instance.mutation.InstanceMutation;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-import ru.ifmo.random.RandomProvider;
 import ru.ifmo.util.Pair;
 
 public class HeuristicAntPathSelector<Instance extends Constructable<Instance>, 
@@ -58,7 +58,7 @@ public class HeuristicAntPathSelector<Instance extends Constructable<Instance>,
 			SearchGraph<Instance, MutationType> graph, Node<Instance> node, 
 			Instance instance, double currentBestFitness,
 			int antNumber, int numberOfAnts) {
-		if ((RandomProvider.getInstance().nextDouble() < newMutationProbability || !node.hasChildren()) && node.getNumberOfChildren() < maxNumberOfMutations) {
+		if ((ThreadLocalRandom.current().nextDouble() < newMutationProbability || !node.hasChildren()) && node.getNumberOfChildren() < maxNumberOfMutations) {
     		return bestMutation(graph, node, instance, currentBestFitness);
     	}
     	Edge edge = rouletteEdgeSelector.select(node.getEdges(), antNumber, numberOfAnts);
@@ -135,7 +135,7 @@ public class HeuristicAntPathSelector<Instance extends Constructable<Instance>,
 		for (int i = 1; i < size; i++) {
 			weight[i] = weight[i - 1] + mutators.get(i).probability();
 		}
-		double p = weight[size - 1] * RandomProvider.getInstance().nextDouble();
+		double p = weight[size - 1] * ThreadLocalRandom.current().nextDouble();
 		int j = 0;
 
 		while (p > weight[j]) {

@@ -15,7 +15,6 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ru.ifmo.ctddev.genetic.transducer.algorithm.FST;
 import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
 import ru.ifmo.optimization.instance.Checkable;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmMutation;
@@ -173,23 +172,6 @@ public class FSM extends AbstractFSM implements Comparable<FSM>, Checkable<FSM, 
 				action = endAndAction[1];
 			}
 			transitions[startState][event] = new FSM.Transition(startState, endState, event == -1 ? "-1" : EVENTS.get(event), action);
-		}
-	}
-	
-	
-	//Needed for InteractingGA
-	public FSM(FST fst) {
-		this(fst.getNumberOfStates());
-		
-		for (int state = 0; state < transitions.length; state++) {
-			for (int event = 0; event < transitions[state].length; event++) {
-				ru.ifmo.ctddev.genetic.transducer.algorithm.Transition fstTransition = fst.getTransition(state, EVENTS.get(event));
-				if (fstTransition == null) {
-					continue;
-				}
-				transitions[state][event] = new Transition(state, fstTransition.getNewState(), 
-						EVENTS.get(event), "1");
-			}
 		}
 	}
 	

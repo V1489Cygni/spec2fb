@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.FSM.Transition;
@@ -15,7 +16,6 @@ import ru.ifmo.optimization.instance.fsm.FsmMetaData;
 import ru.ifmo.optimization.instance.fsm.task.tests.generator.config.TestGeneratorConfig;
 import ru.ifmo.optimization.instance.fsm.task.testswithlabelling.AutomatonTest;
 import ru.ifmo.optimization.instance.fsm.task.testswithlabelling.RandomFSMGeneratorForTests;
-import ru.ifmo.random.RandomProvider;
 
 public class TestsGenerator implements Runnable {
 	private class TestAndCoveredTransitions {
@@ -73,7 +73,7 @@ public class TestsGenerator implements Runnable {
 		List<String> output = new ArrayList<String>();
 		Set<Transition> visitedTransitions = new HashSet<Transition>();
 		for (int i = 0; i < length; i++) {
-			int eventIndex = RandomProvider.getInstance().nextInt(events.size());
+			int eventIndex = ThreadLocalRandom.current().nextInt(events.size());
 			input.add(events.get(eventIndex));
 			Transition t = fsm.getTransition(currentState, eventIndex);
 			Transition tr = new Transition(currentState, t.getEndState(), t.getEvent(), t.getAction());

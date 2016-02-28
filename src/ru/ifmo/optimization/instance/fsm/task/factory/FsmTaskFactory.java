@@ -2,7 +2,6 @@ package ru.ifmo.optimization.instance.fsm.task.factory;
 
 import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.task.AbstractAutomatonTask;
-import ru.ifmo.optimization.instance.fsm.task.fbdkecc.simple.FbdkEccGenerationTask;
 import ru.ifmo.optimization.instance.fsm.task.languagelearning.LanguageLearningTask;
 import ru.ifmo.optimization.instance.fsm.task.smartant.NoStepsSmartAntTask;
 import ru.ifmo.optimization.instance.fsm.task.smartant.PenaltySmartAntTask;
@@ -38,7 +37,6 @@ public class FsmTaskFactory extends AbstractTaskFactory<FSM> {
 		MODEL_CHECKING,
 		MODEL_CHECKING_CONSISTENCY,
 		MODEL_CHECKING_BFS,
-		FBDK,
 		TESTS_ERRORS
 	}
 	
@@ -80,9 +78,6 @@ public class FsmTaskFactory extends AbstractTaskFactory<FSM> {
 			break;
 		case MODEL_CHECKING_BFS:
 			fsmTask = new BFSTestsModelCheckingTask(config);
-			break;
-		case FBDK:
-			fsmTask = new FbdkEccGenerationTask(config);
 			break;
 		case TESTS_ERRORS:
 			fsmTask = new TestsWithErrorsTask(config);

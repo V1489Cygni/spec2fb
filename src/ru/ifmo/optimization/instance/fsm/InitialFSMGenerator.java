@@ -3,12 +3,12 @@ package ru.ifmo.optimization.instance.fsm;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.optimization.instance.InstanceGenerator;
 import ru.ifmo.optimization.instance.fsm.task.AbstractAutomatonTask;
 import ru.ifmo.optimization.instance.fsm.task.AutomatonTaskConstraints;
 import ru.ifmo.optimization.task.AbstractOptimizationTask;
-import ru.ifmo.random.RandomProvider;
 import ru.ifmo.util.Util;
 
 public class InitialFSMGenerator implements InstanceGenerator {
@@ -32,8 +32,8 @@ public class InitialFSMGenerator implements InstanceGenerator {
 					actionsToChooseFrom.removeAll(constraints.getConstraints(j));
 				}
 				
-				String action = actionsToChooseFrom.get(RandomProvider.getInstance().nextInt(actionsToChooseFrom.size()));
-				int nextState = RandomProvider.getInstance().nextInt(numberOfStates);
+				String action = actionsToChooseFrom.get(ThreadLocalRandom.current().nextInt(actionsToChooseFrom.size()));
+				int nextState = ThreadLocalRandom.current().nextInt(numberOfStates);
 				transitions[i][j] = new FSM.Transition(i, nextState, events.get(j), action);
 			}
 		}

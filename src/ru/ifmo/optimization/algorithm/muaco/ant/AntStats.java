@@ -23,24 +23,28 @@ public class AntStats<Instance> {
 	private List<Integer> stepsHistory = new ArrayList<Integer>();
 	private PrintWriter bestLog;
 	private double startTime;
+	private boolean writeThreadLogs;
 	
-	public AntStats(int colonyIterationIndex, double bestFitness, Node bestNode, int lastBestFitnessOccurence) {
+	public AntStats(int colonyIterationIndex, double bestFitness, Node bestNode, int lastBestFitnessOccurence, boolean writeThreadLogs) {
 		this.colonyIterationIndex = colonyIterationIndex;
 		this.bestFitness = bestFitness;
 		this.bestNode = bestNode;
 		this.lastBestFitnessColonyIterationNumber = lastBestFitnessOccurence;
-		this.startTime = OptimizationAlgorithmCutoff.getInstance().getStartTime();		
+		this.startTime = OptimizationAlgorithmCutoff.getInstance().getStartTime();
+		this.writeThreadLogs = writeThreadLogs;
 	}
 	
 	public void initLog() {
-		try {
-			bestLog = new PrintWriter(new File(Thread.currentThread().getId() + ".thread-log"));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}	
-		
-		File file = new File(Thread.currentThread().getId() + "-best");
-		file.mkdir();
+		if (writeThreadLogs) {
+			try {
+				bestLog = new PrintWriter(new File(Thread.currentThread().getId() + ".thread-log"));
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}	
+
+			File file = new File(Thread.currentThread().getId() + "-best");
+			file.mkdir();
+		}
 	}
 	
 	public double getBestFitness() {
@@ -70,20 +74,21 @@ public class AntStats<Instance> {
 			bestLog.flush();
 		}
 		
-//		File file = new File(Thread.currentThread().getId() + "-best");
-//		if (!file.exists()) {
-//			return;
-//		}
-//		
-//		PrintWriter out = null;
-//		try {
-//			out = new PrintWriter(new File(Thread.currentThread().getId() + "-best/" + bestNode.getFitness()));
-//		} catch (FileNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		out.println(bestInstance);
-//		out.close();
+		if (writeThreadLogs && bestFitness > 0.9) {
+			File file = new File(Thread.currentThread().getId() + "-best");
+			if (!file.exists()) {
+				return;
+			}
+
+			PrintWriter out = null;
+			try {
+				out = new PrintWriter(new File(Thread.currentThread().getId() + "-best/" + bestNode.getFitness()));
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+			out.println(bestInstance);
+			out.close();
+		}
 	}
 	
 	public void setLastBestFitnessColonyIterationNumber(int lastBestFitnessOccurence) {

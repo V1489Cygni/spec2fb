@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ru.ifmo.bool.ComplianceChecker;
 import ru.ifmo.optimization.algorithm.muaco.graph.MutationCollection;
@@ -15,7 +16,6 @@ import ru.ifmo.optimization.instance.fsm.FSM;
 import ru.ifmo.optimization.instance.fsm.FSM.Transition;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmMutation;
 import ru.ifmo.optimization.instance.fsm.mutation.FsmTransitionMutation;
-import ru.ifmo.random.RandomProvider;
 
 
 /**
@@ -77,7 +77,7 @@ public class Util {
 		for (int i = 0; i < mutated.getEvents().size(); i++) {
 			eventsSequence.add(i);
 		}
-		Collections.shuffle(eventsSequence, RandomProvider.getInstance());
+		Collections.shuffle(eventsSequence, ThreadLocalRandom.current());
 		
 		//check compliance of transitions
 		ComplianceChecker complianceChecker = ComplianceChecker.getComplianceChecker();
@@ -157,7 +157,7 @@ public class Util {
 		for (int i = 0; i < FSM.EVENTS.size(); i++) {
 			eventsSequence.add(i);
 		}
-		Collections.shuffle(eventsSequence, RandomProvider.getInstance());
+		Collections.shuffle(eventsSequence, ThreadLocalRandom.current());
 		List<Transition> result = new ArrayList<Transition>();
 
 		for (int i = 0; i < transitions.size(); i++) {
