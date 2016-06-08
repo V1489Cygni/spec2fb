@@ -1,0 +1,24 @@
+digraph dfa{
+graph[dpi=600];
+node[shape=ellipse];
+1 [label=<<i>A</i><sub>1</sub>>];
+2 [label=<<i>A</i><sub>2</sub>>];
+3 [label=<<i>A</i><sub>3</sub>>];
+4 [label=<<i>A</i><sub>4</sub>>];
+5 [label=<<i>A</i><sub>5</sub>>];
+6 [label=<<i>A</i><sub>6</sub>>];
+7 [label=<<i>A</i><sub>7</sub>>];
+8 [label=<<i>A</i><sub>8</sub>>];
+9 [label=<<i>A</i><sub>9</sub>>];
+
+
+1 -> 2 [style=dashed];
+1 -> 3 [label = < (2, <i>e</i><sub>2</sub> [<i>x</i><sub>2</sub>]) → 1 >];
+1 -> 4 [style=dashed];
+3 -> 5 [label = < (3, <i>e</i><sub>2</sub> [1]) → 3 >];
+3 -> 6 [style=dashed];
+3 -> 7 [style=dashed];
+5 -> 7 [label = < (3, <i>e</i><sub>1</sub> [¬<i>x</i><sub>1</sub>]) → 2 >];
+5 -> 8 [style=dashed];
+5 -> 9 [style=dashed];
+}

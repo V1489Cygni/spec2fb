@@ -1,0 +1,3 @@
+#!/bin/bash
+ladot sat-pmuaco.ladot
+ps2eps sat-pmuaco.ps 

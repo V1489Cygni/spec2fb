@@ -1,0 +1,5 @@
+#!/bin/bash
+rm -f classical_aco_graph.*
+twopi classical.gv > classical_aco_graph.gv
+neato -Tps:cairo classical_aco_graph.gv > classical_aco_graph.ps
+ps2eps classical_aco_graph.ps

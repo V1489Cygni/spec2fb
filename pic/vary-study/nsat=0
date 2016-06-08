@@ -1,0 +1,8 @@
+p_thin=20: mean_time=82.0600625, median_time=40.9
+p_thin=30: mean_time=96.5005670103, median_time=40.568
+p_thin=40: mean_time=112.075804124, median_time=40.976
+p_thin=50: mean_time=101.764608247, median_time=41.614
+p_thin=60: mean_time=100.751649485, median_time=39.685
+p_thin=70: mean_time=88.4207525773, median_time=46.247
+p_thin=80: mean_time=81.2151340206, median_time=40.366
+p_thin=90: mean_time=93.0149484536, median_time=44.26

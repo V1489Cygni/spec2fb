@@ -1,0 +1,15 @@
+# generated file, don't try to modify
+# command: dot -Tpng <filename> > tree.png
+digraph Automaton {
+    graph[dpi=600];
+    rankdir=LR;
+    node [shape = box, style="rounded, filled"];
+    0 [label="0", style="rounded,filled,bold"];
+    1 [label="1"];
+    2 [label="2"];
+
+    0 -> 1 [label = <<i>e</i><sub>2</sub>[1]/<i>z</i><sub>2</sub>> ];
+    1 -> 1 [label = <<i>e</i><sub>1</sub>[<i>x</i>]/<i>z</i><sub>0</sub>,<i>z</i><sub>1</sub>> ];
+    1 -> 2 [label = <<i>e</i><sub>0</sub>[¬<i>x</i>]/<i>z</i><sub>1</sub>> ];
+    2 -> 0 [label = <<i>e</i><sub>1</sub>[1]/<i>z</i><sub>2</sub>> ];
+}

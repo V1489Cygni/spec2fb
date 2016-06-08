@@ -1,0 +1,11 @@
+digraph fst{
+graph[dpi=600];
+rankdir=LR;
+node [shape = box, style="rounded, filled"];
+0->2 [label="0/1"];
+0->0 [label="1/0"];
+1->0 [label="1/1"];
+2->1 [label="0/0"];
+1->1 [label="0/1"];
+2->2 [label="1/"]
+}

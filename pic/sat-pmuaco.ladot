@@ -1,0 +1,55 @@
+#coding=utf-8
+digraph g {
+    rankdir=LR;
+    scenarios [label=$T$, shape=box];    
+    compound=true;
+    sc1 [label=$T_{\text{thin}}^{0}$, shape=box];
+    sc2 [label=$T_{\text{thin}}^{1}$, shape=box];
+    sc3 [label=$T_{\text{thin}}^{2}$, shape=box];
+    sc4 [shape=none, label="..."];
+    sc5 [label=$T_{\text{thin}}^{m-1}$, shape=box];
+
+    sat1 [shape=box, label=$\text{\textit{cryptominisat}}$];
+    sat2 [shape=box, label=$\text{\textit{cryptominisat}}$];
+    sat3 [shape=box, label=$\text{\textit{cryptominisat}}$];
+    sat4 [shape=none, label="..."];
+    sat5 [shape=box, label=$\text{\textit{cryptominisat}}$];  
+
+    pmuaco [shape=box, label="Parallel MuACO", fixedsize=true, width=1.5, height=2.5];
+
+    scenarios->sc1;
+    scenarios->sc2;
+    scenarios->sc3;
+    scenarios->sc4 [color="white"];
+    scenarios->sc5;
+    
+    sc1->sat1;
+    sc2->sat2;
+    sc3->sat3;
+    sc4->sat4 [color="white"];
+    sc5->sat5;
+
+    sat1->pmuaco;
+    sat2->pmuaco;
+    sat3->pmuaco;
+    sat5->pmuaco;
+
+    pmuaco->fsm1_1;
+
+    subgraph clusterEfsm {
+        fsm1_1 [label="", shape=circle, style="rounded,filled", fixedsize=true, width=0.3, height=0.2];
+        fsm1_2 [label="", shape=circle, style="rounded,filled", fixedsize=true, width=0.3, height=0.2];
+
+        fsm1_1 -> fsm1_2 [arrowsize=0.5]; 
+        fsm1_2 -> fsm1_1 [arrowsize=0.5]; 
+    }
+
+
+
+
+
+
+
+ 
+    
+}

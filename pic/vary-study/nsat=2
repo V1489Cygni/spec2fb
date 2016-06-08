@@ -1,0 +1,10 @@
+p_thin=0: mean_time=62.063814433, median_time=22.571
+p_thin=10: mean_time=29.3506185567, median_time=13.886
+p_thin=20: mean_time=21.9803814433, median_time=12.91
+p_thin=30: mean_time=28.9199896907, median_time=11.376
+p_thin=40: mean_time=24.3056701031, median_time=12.078
+p_thin=50: mean_time=21.1050412371, median_time=9.432
+p_thin=60: mean_time=23.5085154639, median_time=11.607
+p_thin=70: mean_time=19.3368556701, median_time=9.624
+p_thin=80: mean_time=28.3312268041, median_time=10.103
+p_thin=90: mean_time=34.4767319588, median_time=12.894

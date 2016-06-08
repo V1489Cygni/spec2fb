@@ -1,0 +1,7 @@
+#!/bin/bash
+scp chivdan@griffin:/home/chivdan/experiments/2014-AIT/throw-away-sat-vary-p/16/nsat=* .
+
+for f in $(ls nsat=*) ; do
+   nsat=$(echo $f | grep -o -P '[0-9]+')
+   cat $f | awk '{print $1" "$3}'  | sed 's/[a-z]//g' | sed 's/_//g' | sed 's/=//g' | sed 's/://g' > $nsat.dat
+done

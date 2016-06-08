@@ -1,0 +1,11 @@
+digraph dfa {
+graph[dpi=600];
+rankdir=LR;
+node [shape=doublecircle; style="filled"]; 2;
+node [shape=circle; style="filled"];
+0->1 [label=0];
+0->2 [label=1];
+1->2 [label=0];
+1->0 [label=1];
+2->2 [label=0];
+}

@@ -1,0 +1,9 @@
+digraph fsm{
+graph [dpi=600];
+rankdir=LR;
+node [shape = box, style="rounded, filled"];
+"1"->"2" [label="T/z"];
+"1"->"1" [label="A/z"];
+"2"->"2" [label="T/z"];
+"2"->"1" [label="A/z"];
+}

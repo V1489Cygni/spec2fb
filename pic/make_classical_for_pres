@@ -1,0 +1,5 @@
+#!/bin/bash
+rm -f classical_aco_graph.*
+twopi classical-for-pres.gv > classical_aco_graph_for_pres.gv
+neato -Tps:cairo classical_aco_graph_for_pres.gv > classical_aco_graph_for_pres.ps
+ps2eps classical_aco_graph_for_pres.ps

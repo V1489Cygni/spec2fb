@@ -1,0 +1,29 @@
+#!/bin/bash
+scp chivdan@griffin:/home/chivdan/experiments/2014-AIT/parallel-muaco/16/result-* .
+rm parallel-muaco.dat
+for f in $(ls result-*) ; do
+    nstates=$(echo $f | grep -o -P '[0-9]+')
+    t=$(cat $f | awk '{print $2}' | sed 's/[a-z]//g' | sed 's/_//g' | sed 's/=//g' | sed 's/://g' | sed 's/,//g')
+    echo $nstates $t >> parallel-muaco.dat
+    rm $f
+done
+
+
+scp chivdan@griffin:/home/chivdan/experiments/2014-AIT/parallel-sat-muaco/16/result-* .
+rm parallel-sat-muaco.dat
+for f in $(ls result-*) ; do
+    nstates=$(echo $f | grep -o -P '[0-9]+')
+    t=$(cat $f | awk '{print $2}' | sed 's/[a-z]//g' | sed 's/_//g' | sed 's/=//g' | sed 's/://g' | sed 's/,//g')
+    echo $nstates $t >> parallel-sat-muaco.dat
+    rm $f
+done
+
+
+scp chivdan@griffin:/home/chivdan/experiments/2014-AIT/throw-away-sat/16/result-* .
+rm throw-away.dat
+for f in $(ls result-*) ; do
+    nstates=$(echo $f | grep -o -P '[0-9]+')
+    t=$(cat $f | awk '{print $2}' | sed 's/[a-z]//g' | sed 's/_//g' | sed 's/=//g' | sed 's/://g' | sed 's/,//g')
+    rm $f
+    echo $nstates $t >> throw-away.dat
+done
