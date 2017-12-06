@@ -14,3 +14,12 @@ hs_err_pid*
 Paper/Paper.pdf
 Paper/Paper.aux
 Paper/Paper.log
+
+Diploma.aux
+Diploma.pdf
+Diploma.out
+Diploma.toc
+
+*.log
+
+*.un~
